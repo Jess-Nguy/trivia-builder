@@ -39,7 +39,7 @@ Columns (header row required):
 
 ```csv
 Question, Option 1, Option 2, Option 3, Option 4, Option 5,
-Current Answer, Categories, Type, Attachments, Points, Hint 1
+Current Answer, Categories, Type, Attachments, Points, Hint 1, Explanation
 ```
 
 - **Required:** `Question`, `Current Answer`, `Type`, `Points`.
@@ -50,9 +50,22 @@ Current Answer, Categories, Type, Attachments, Points, Hint 1
 - **Attachments** (for `Single Choice w/ Media`) is an image/video/audio URL. Keep
   video/audio to ~1 minute.
 - **Hint 1** is optional; a HINT button appears only when it's filled in.
+- **Explanation** (optional) is prose shown on the Answer Reveal page. Keep it
+  separate so `Current Answer` can stay an *exact* answer.
 
 Rows that fail validation are skipped and reported on the Game Mode screen; they
 don't crash the app.
+
+### Answer grading (auto)
+
+For `Multiple Choice` and `True or False`, if `Current Answer` exactly matches one
+of the options (or is `TRUE`/`FALSE`), the app grades the selected answer and
+announces correct/wrong on the Answer Reveal page. A wrong answer with no hint
+taken skips the Manual Scoreboard; a wrong answer where a hint was used shows the
+scoreboard with points locked (hint counter only). Rows whose `Current Answer`
+isn't an exact match (and all open-answer types) aren't graded — they go to the
+manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
+`Explanation`) is what unlocks grading.
 
 ## How a game flows
 

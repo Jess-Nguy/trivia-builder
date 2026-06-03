@@ -1,10 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
+import EndGameButton from '../components/EndGameButton.vue';
 
 const q = computed(() => store.currentQuestion);
 const pointValue = computed(() => q.value?.points ?? 0);
-const showPoints = computed(() => store.settings.recordPoints);
+// Points controls hide when a gradable question was answered wrong.
+const showPoints = computed(() => store.settings.recordPoints && !store.pointsLocked);
 const showHints = computed(() => store.settings.recordHints);
 
 const activeIdx = ref(0);
@@ -41,11 +43,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 <template>
   <div class="panel">
+    <EndGameButton />
     <div class="brand">Trivia Builder</div>
     <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
     <h1 class="title">Manual Scoreboard</h1>
 
     <p v-if="showPoints" class="award-line">Award points: {{ pointValue }} for the question</p>
+    <p v-if="store.pointsLocked && store.settings.recordPoints" class="award-line locked">
+      Answer was incorrect — no points to award.
+    </p>
     <p v-if="showHints" class="award-line">Hint assignment: {{ store.hintsTakenThisQuestion }} to distribute</p>
 
     <div class="players-grid">

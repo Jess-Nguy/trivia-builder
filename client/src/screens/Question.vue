@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
 import Media from '../components/Media.vue';
+import EndGameButton from '../components/EndGameButton.vue';
 
 const q = computed(() => store.currentQuestion);
 const selected = ref(null);
@@ -66,7 +67,8 @@ function showHint() {
 }
 function submit() {
   clearTimer();
-  store.submitQuestion();
+  const chosen = selected.value != null ? displayOptions.value[selected.value] : null;
+  store.submitQuestion(chosen);
 }
 
 function onKey(e) {
@@ -94,6 +96,7 @@ const mmss = computed(() => {
 
 <template>
   <div class="panel" v-if="q">
+    <EndGameButton />
     <div class="brand">Trivia Builder</div>
     <div v-if="store.settings.timer > 0" class="timer">{{ mmss }}</div>
 

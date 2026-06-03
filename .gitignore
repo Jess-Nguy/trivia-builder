@@ -5,6 +5,9 @@ client/node_modules/
 # Build output
 client/dist/
 
+# Vite dev cache
+client/.vite/
+
 # OS / editor
 .DS_Store
 *.log

@@ -11,11 +11,12 @@ Afterwards build be a simple project timeline plan that an ai agent mode can fol
 1. no database. only csv that either get overwritten or a new csv gets created.
 2. csv has question, option 1, option 2, option 3, option 4, option 5, current answer, categories, type, attachments, points, hint 1 (future may allow multiple hint columns)
     - Required fields are: `Question`, `Current Answer`, `Type`, and `Points`
-    - each question can have multiple categories 
-    - type column can only be: single choice, multiple choice, true or false, or single choice w/ media. 
-    - all options fields can be empty as long as the `type` isn't `Multiple Choice`. 
+    - `Current Answer` should be an exact match to an option if it's multiple choice or `True or False`
+    - each question can have multiple categories.
+    - type column can only be: single choice, multiple choice, true or false, or single choice w/ media.
+    - all options fields can be empty as long as the `type` isn't `Multiple Choice`.
     - If the type is `True or False`  it doesn't require options to be filled in either because the front end can hardcode those options.
-    - If the type is `Single Choice` then all option columns can be empty. Only requires `Current Answer` to be filled in. 
+    - If the type is `Single Choice` then all option columns can be empty. Only requires `Current Answer` to be filled in.
     - If the type is `Single Choice w/ Media` then treat it like `Single Choice` but with a media import image or short video (1 minute max) or short audio (1 minute max) option
 3. single user controls. No storage of scoreboard.
 4. Game mode has these settings:
@@ -33,6 +34,13 @@ Afterwards build be a simple project timeline plan that an ai agent mode can fol
     - a hint button will appear if the hint value is not empty
 6. Manual scoreboard page appears after every question to assign/award points to people.
 7. Final Score page will be a table view of all the users with tallied points, number of hints taken, and the total score. It will also say the winner given the highest total score. The next button takes user back to the `Game Mode` page.
+
+----
+
+## Additional features for in scope
+
+1. early exit button to end the game prematurely during any point of the game play.
+2. to announce if the answer selected was wrong or not in the answer yellow page. if it was wrong and not hints were taken then skip the manual scoreboard page because no one gets points and no one needs to get subtractions/add a counter for hints. if it's wrong but a hint was used then still go to manual scoreboard but no points should be allotted to be distributed.
 
 ## Out of scope features
 

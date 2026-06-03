@@ -17,6 +17,9 @@ const TYPES = {
 const COLUMNS = [
   'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5',
   'Current Answer', 'Categories', 'Type', 'Attachments', 'Points', 'Hint 1',
+  // Optional: prose shown on the Answer Reveal page. Keeping it separate lets
+  // `Current Answer` stay an exact answer for grading.
+  'Explanation',
 ];
 
 /** List every .csv filename in the import directory. */
@@ -109,6 +112,7 @@ export function parseCsv(filePath) {
       attachment: get('Attachments'),
       points,
       hint: get('Hint 1'),
+      explanation: get('Explanation'), // optional column; '' when absent
     });
   });
 
