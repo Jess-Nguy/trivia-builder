@@ -25,9 +25,14 @@ const kind = computed(() => {
 // Use the privacy-enhanced host + modest branding / no related videos.
 // Note: YouTube has no param that fully removes the title bar, so we also
 // mask it with an overlay strip in the template (see .yt-title-mask).
+//
+// autoplay=1: start playing immediately so the static thumbnail (which can
+// give away the answer) is never shown. Kept unmuted so the audience hears
+// the audio — autoplay-with-sound works because reaching a question is a
+// user click/tap, which satisfies the browser's autoplay gesture policy.
 const ytEmbed = computed(
   () =>
-    `https://www.youtube-nocookie.com/embed/${ytId.value}?rel=0&modestbranding=1&iv_load_policy=3`
+    `https://www.youtube-nocookie.com/embed/${ytId.value}?rel=0&modestbranding=1&iv_load_policy=3&autoplay=1`
 );
 </script>
 
