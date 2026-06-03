@@ -276,6 +276,23 @@ kbd {
 }
 .end-game-btn:hover { color: #b3261e; border-color: #e0a0a0; }
 
+.fullscreen-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: #fff;
+  color: var(--muted);
+  border: 1.5px solid #c9d6d4;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  z-index: 10;
+}
+.fullscreen-btn:hover { color: var(--ink); border-color: #9fd6cf; }
+
 .media-wrap { text-align: center; margin: 16px 0; }
 .media-wrap img, .media-wrap video { max-width: 100%; max-height: 360px; border-radius: 12px; }
 .media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; }

@@ -5,6 +5,7 @@ import Question from './screens/Question.vue';
 import AnswerReveal from './screens/AnswerReveal.vue';
 import Scoreboard from './screens/Scoreboard.vue';
 import FinalScores from './screens/FinalScores.vue';
+import FullscreenButton from './components/FullscreenButton.vue';
 
 const screens = {
   gameMode: GameMode,
@@ -17,6 +18,7 @@ const screens = {
 
 <template>
   <div class="app">
+    <FullscreenButton />
     <component :is="screens[store.screen]" />
   </div>
 </template>
