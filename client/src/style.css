@@ -144,6 +144,24 @@ body {
   background: #fff;
 }
 
+/* Team/user name inputs (Game Mode) */
+.name-row { align-items: start; }
+.name-row > label { padding-top: 4px; }
+.name-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.name-input {
+  padding: 8px 10px;
+  border: 1.5px solid #b7c9c7;
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+}
+.name-input.name-dupe { border-color: #b3261e; }
+
 .center { text-align: center; }
 .start-wrap { text-align: center; margin-top: 22px; }
 .error { color: #b3261e; font-weight: 600; margin-top: 10px; }

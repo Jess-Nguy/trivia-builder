@@ -18,6 +18,22 @@ function shuffle(arr) {
 // Normalize a string for exact-match comparison (trim + lowercase).
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 
+// localStorage key for custom team/user names, so they survive page reloads
+// and carry across rounds.
+const NAMES_KEY = 'trivia-player-names';
+
+// The default numbered name shown when a player's custom name is blank.
+const defaultName = (i) => `Team/User ${i + 1}`;
+
+function loadNames() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(NAMES_KEY));
+    return Array.isArray(arr) ? arr.map((n) => String(n ?? '')) : [];
+  } catch {
+    return [];
+  }
+}
+
 export const store = reactive({
   screen: 'gameMode', // gameMode | question | answer | scoreboard | final
 
@@ -32,6 +48,12 @@ export const store = reactive({
   },
 
   players: [],
+
+  // Custom team/user names by slot index. A blank entry means "use the default
+  // numbered name". Persisted to localStorage and kept across rounds so a name
+  // typed for one game is still there for the next.
+  playerNames: loadNames(),
+
   questions: [],
   index: 0,
   hintsTakenThisQuestion: 0,
@@ -102,12 +124,45 @@ export const store = reactive({
     return totals.filter((t) => t.total === max);
   },
 
+  // The name to use for a player slot: their trimmed custom name, or the
+  // default numbered name when blank.
+  effectiveName(i) {
+    return String(this.playerNames[i] ?? '').trim() || defaultName(i);
+  },
+
+  // Read-only default for placeholders in the UI.
+  defaultName,
+
   // --- Actions ---
+
+  // Set the custom name for a slot and persist. Resizing keeps only the names
+  // for slots that are currently visible (count-driven), discarding any beyond.
+  setPlayerName(i, name) {
+    this.playerNames[i] = name;
+    this.persistNames();
+  },
+
+  // Trim the stored names to `count` slots, padding with blanks as needed, so
+  // lowering the team count drops names for the now-hidden slots.
+  resizeNames(count) {
+    const next = Array.from({ length: count }, (_, i) => this.playerNames[i] ?? '');
+    this.playerNames = next;
+    this.persistNames();
+  },
+
+  persistNames() {
+    try {
+      localStorage.setItem(NAMES_KEY, JSON.stringify(this.playerNames));
+    } catch {
+      /* storage unavailable (private mode, quota) — names just won't persist */
+    }
+  },
+
   startGame(settings, allQuestions) {
     this.settings = { ...settings };
     this.players = Array.from({ length: settings.numPlayers }, (_, i) => ({
       id: i,
-      name: `Team/User ${i + 1}`,
+      name: this.effectiveName(i),
       color: PLAYER_COLORS[i % PLAYER_COLORS.length],
       points: 0,
       hints: 0,
