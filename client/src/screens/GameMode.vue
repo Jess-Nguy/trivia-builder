@@ -57,12 +57,44 @@ const allSelected = computed(
 const maxQuestions = computed(() => filteredQuestions.value.length || 1);
 const fileSelected = computed(() => !!form.fileName && !!loaded.value);
 
+// One entry per visible team/user slot, for rendering the name inputs.
+const teamSlots = computed(() => Array.from({ length: form.numPlayers }, (_, i) => i));
+
+// The 0-based indices of any slots whose effective name collides (case-
+// insensitive) with an earlier slot's. Two teams may not share a name.
+const duplicateSlots = computed(() => {
+  const seen = new Map();
+  const dupes = new Set();
+  teamSlots.value.forEach((i) => {
+    const key = store.effectiveName(i).trim().toLowerCase();
+    if (seen.has(key)) dupes.add(i);
+    else seen.set(key, i);
+  });
+  return dupes;
+});
+const hasDuplicateNames = computed(() => duplicateSlots.value.size > 0);
+
+function onNameInput(i, value) {
+  store.setPlayerName(i, value);
+}
+
+// Keep the stored names sized to the visible team count. Lowering the count
+// discards names for the now-hidden slots ("keep only visible").
+watch(() => form.numPlayers, (n) => store.resizeNames(n));
+
 // Keep the requested question count within the filtered pool as the selection changes.
 watch(maxQuestions, (max) => {
   if (form.numQuestions > max) form.numQuestions = max;
 });
 
 onMounted(async () => {
+  // Restore the team count to cover any names saved from a previous session, so
+  // reload-persisted names stay visible instead of being trimmed away. Only an
+  // explicit lowering of the count discards names.
+  if (store.playerNames.length > 0) {
+    form.numPlayers = Math.min(8, Math.max(1, store.playerNames.length));
+  }
+  store.resizeNames(form.numPlayers);
   try {
     files.value = await fetchFiles();
   } catch (e) {
@@ -108,6 +140,7 @@ function clampTimer() {
 
 function startGame() {
   if (!fileSelected.value || filteredQuestions.value.length === 0) return;
+  if (hasDuplicateNames.value) return;
   clampPlayers();
   clampQuestions();
   clampTimer();
@@ -123,6 +156,26 @@ function startGame() {
     <div class="form-row">
       <label>number of teams/users:</label>
       <input type="number" min="1" max="8" v-model.number="form.numPlayers" @change="clampPlayers" />
+    </div>
+
+    <div class="form-row name-row">
+      <label>
+        team/user names
+        <br /><span class="hint-text">(leave blank for the default)</span>
+      </label>
+      <div class="name-list">
+        <input
+          v-for="i in teamSlots"
+          :key="i"
+          type="text"
+          maxlength="30"
+          class="name-input"
+          :class="{ 'name-dupe': duplicateSlots.has(i) }"
+          :value="store.playerNames[i] ?? ''"
+          :placeholder="store.defaultName(i)"
+          @input="onNameInput(i, $event.target.value)"
+        />
+      </div>
     </div>
 
     <div class="form-row">
@@ -188,12 +241,15 @@ function startGame() {
     <p v-if="fileSelected && categories.length && selectedCategories.length === 0" class="error">
       Select at least one category to play.
     </p>
+    <p v-if="hasDuplicateNames" class="error">
+      Each team/user needs a unique name.
+    </p>
     <p v-if="error" class="error">{{ error }}</p>
 
     <div class="start-wrap">
       <button
         class="btn btn-green"
-        :disabled="!fileSelected || filteredQuestions.length === 0"
+        :disabled="!fileSelected || filteredQuestions.length === 0 || hasDuplicateNames"
         @click="startGame"
       >
         START GAME
