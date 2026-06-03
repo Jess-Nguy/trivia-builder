@@ -239,3 +239,17 @@ kbd {
 .media-wrap { text-align: center; margin: 16px 0; }
 .media-wrap img, .media-wrap video { max-width: 100%; max-height: 360px; border-radius: 12px; }
 .media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; }
+
+/* YouTube embeds always render a title bar at the top that can spoil the answer.
+   Wrap the iframe and cover that strip with an opaque mask. */
+.media-wrap .yt-frame { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.media-wrap .yt-title-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #000;
+  border-radius: 12px 12px 0 0;
+  pointer-events: none; /* let clicks reach the player to play/pause */
+}
