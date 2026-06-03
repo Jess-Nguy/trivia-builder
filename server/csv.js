@@ -44,13 +44,17 @@ const clean = (v) => (v == null ? '' : String(v).trim());
  * Parse and validate a CSV file.
  * Returns { questions, problems, total } — valid rows become question objects,
  * invalid rows are reported in `problems` (with the 1-based CSV row number) and skipped.
+ *
+ * Rows with a blank `Points` get a default (see below). When that happens the
+ * defaulted value is written back into the CSV so the data is persisted for next time.
  */
 export function parseCsv(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
-  const { data } = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+  const { data, meta } = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
 
   const questions = [];
   const problems = [];
+  let backfilled = false; // set when we default a blank Points and need to rewrite the file
 
   data.forEach((raw, i) => {
     const rowNum = i + 2; // +1 for header, +1 for 1-based
@@ -60,6 +64,7 @@ export function parseCsv(filePath) {
     const currentAnswer = get('Current Answer');
     const rawType = get('Type');
     const rawPoints = get('Points');
+    const hint = get('Hint 1');
     const type = TYPES[rawType.toLowerCase()];
 
     const rowProblems = [];
@@ -73,11 +78,19 @@ export function parseCsv(filePath) {
         message: `Invalid Type "${rawType}". Must be one of: ${Object.values(TYPES).join(', ')}.`,
       });
     }
-    const points = Number(rawPoints);
+    // Points are optional: when blank, default by hint presence — a question with
+    // a hint is easier to guess, so it's worth 2; one without is worth 1. The
+    // defaulted value is written back into the row so it persists to the file.
+    let points;
     if (!rawPoints) {
-      rowProblems.push({ field: 'Points', message: 'Points is required.' });
-    } else if (!Number.isFinite(points)) {
-      rowProblems.push({ field: 'Points', message: `Points must be a number (got "${rawPoints}").` });
+      points = hint ? 2 : 1;
+      raw['Points'] = String(points);
+      backfilled = true;
+    } else {
+      points = Number(rawPoints);
+      if (!Number.isFinite(points)) {
+        rowProblems.push({ field: 'Points', message: `Points must be a number (got "${rawPoints}").` });
+      }
     }
 
     const options = [
@@ -111,10 +124,16 @@ export function parseCsv(filePath) {
       type,
       attachment: get('Attachments'),
       points,
-      hint: get('Hint 1'),
+      hint,
       explanation: get('Explanation'), // optional column; '' when absent
     });
   });
+
+  // Persist any defaulted Points back to the CSV so the data is there next time.
+  if (backfilled) {
+    const csv = Papa.unparse(data, { columns: meta.fields });
+    fs.writeFileSync(filePath, csv + '\n');
+  }
 
   return { questions, problems, total: questions.length };
 }
