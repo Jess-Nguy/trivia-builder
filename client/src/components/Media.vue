@@ -13,6 +13,27 @@ function youTubeId(url) {
 
 const ytId = computed(() => youTubeId(props.src || ''));
 
+// Pull a start time (in seconds) out of the URL's t / start param.
+// Accepts plain seconds ("33", "33s") and h/m/s form ("1m30s", "1h2m3s").
+function youTubeStart(url) {
+  const m = url.match(/[?&](?:t|start)=([^&]+)/i);
+  if (!m) return null;
+  const v = m[1];
+  if (/^\d+s?$/.test(v)) return parseInt(v, 10); // plain seconds
+  const parts = v.match(/(\d+)h|(\d+)m|(\d+)s/gi);
+  if (!parts) return null;
+  let secs = 0;
+  for (const p of parts) {
+    const n = parseInt(p, 10);
+    if (/h$/i.test(p)) secs += n * 3600;
+    else if (/m$/i.test(p)) secs += n * 60;
+    else secs += n;
+  }
+  return secs;
+}
+
+const ytStart = computed(() => youTubeStart(props.src || ''));
+
 const kind = computed(() => {
   if (ytId.value) return 'youtube';
   const url = (props.src || '').toLowerCase();
@@ -30,10 +51,11 @@ const kind = computed(() => {
 // give away the answer) is never shown. Kept unmuted so the audience hears
 // the audio — autoplay-with-sound works because reaching a question is a
 // user click/tap, which satisfies the browser's autoplay gesture policy.
-const ytEmbed = computed(
-  () =>
-    `https://www.youtube-nocookie.com/embed/${ytId.value}?rel=0&modestbranding=1&iv_load_policy=3&autoplay=1`
-);
+const ytEmbed = computed(() => {
+  let url = `https://www.youtube-nocookie.com/embed/${ytId.value}?rel=0&modestbranding=1&iv_load_policy=3&autoplay=1`;
+  if (ytStart.value) url += `&start=${ytStart.value}`;
+  return url;
+});
 </script>
 
 <template>
