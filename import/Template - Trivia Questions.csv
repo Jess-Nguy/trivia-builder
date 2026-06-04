@@ -1,0 +1,8 @@
+Question,Option 1,Option 2,Option 3,Option 4,Option 5,Current Answer,Categories,Type,Question Attachments,Points,Hint 1,Option 1 Attachment,Option 2 Attachment,Option 3 Attachment,Option 4 Attachment,Option 5 Attachment,Explanation,question timer delay by secs
+"Single Choice example — host reads it, players answer aloud (no clickable options).",,,,,,the exact answer,"Category A, Category B",Single Choice,,1,optional hint — shows a HINT button when filled,,,,,,optional prose shown on the Answer Reveal page,
+Multiple Choice example — fill 2–5 options; Current Answer must equal one exactly to auto-grade.,first option,second option,third option,,,second option,Category A,Multiple Choice,,2,,,,,,,,
+True or False example — options are hardcoded; just set Current Answer to TRUE or FALSE.,,,,,,TRUE,Category B,True or False,,1,,,,,,,,
+Question media example — any type can carry an image/video/audio/YouTube URL.,,,,,,the answer,Media,Single Choice,https://example.com/image-or-video-or-audio-or-youtube-url,1,,,,,,,,
+Per-option media example — attach a URL to any option (text optional; image-only options work).,option with text + image,another option,,,,option with text + image,Media,Multiple Choice,,2,,https://example.com/option-1-image-url,https://example.com/option-2-image-url,,,,,
+Reading-delay example — show the question for N seconds (options hidden) before answering. Space skips.,,,,,,the answer,Category A,Single Choice,,1,,,,,,,,10
+"Points backfill — leave Points blank and it defaults (hint present → 2, none → 1) and is saved back.",,,,,,the answer,Category A,Single Choice,,,"a hint, so this row backfills to 2 points",,,,,,,
