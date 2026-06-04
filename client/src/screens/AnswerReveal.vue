@@ -6,7 +6,8 @@ import EndGameButton from '../components/EndGameButton.vue';
 
 const q = computed(() => store.currentQuestion);
 const isChoice = computed(() => q.value && (q.value.type === 'Multiple Choice' || q.value.type === 'True or False'));
-const choiceOptions = computed(() => (q.value?.type === 'True or False' ? ['TRUE', 'FALSE'] : q.value?.options || []));
+// Each option is an { text, attachment } object (TRUE/FALSE included for T/F).
+const choiceOptions = computed(() => q.value?.options || []);
 
 // Correct/wrong banner only shows for auto-gradable questions.
 const graded = computed(() => store.isGradable);
@@ -15,8 +16,8 @@ const correct = computed(() => store.isCorrect);
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 function optionState(opt) {
   if (!graded.value) return '';
-  if (norm(opt) === norm(q.value.currentAnswer)) return 'correct';
-  if (store.selectedAnswer && norm(opt) === norm(store.selectedAnswer)) return 'chosen-wrong';
+  if (norm(opt.text) === norm(q.value.currentAnswer)) return 'correct';
+  if (store.selectedAnswer && norm(opt.text) === norm(store.selectedAnswer)) return 'chosen-wrong';
   return '';
 }
 
@@ -40,7 +41,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     <div class="qnum">Question #{{ store.index + 1 }}:</div>
     <div class="qtext">{{ q.question }}</div>
 
-    <Media v-if="q.type === 'Single Choice w/ Media'" :src="q.attachment" />
+    <Media v-if="q.attachment" :src="q.attachment" />
 
     <div v-if="graded" class="verdict" :class="correct ? 'verdict-correct' : 'verdict-wrong'">
       {{ correct ? '✓ Correct!' : (store.selectedAnswer ? '✗ Incorrect' : '✗ No answer selected') }}
@@ -52,7 +53,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
     <div class="answer-options" v-if="isChoice">
       Options:
-      <span v-for="(opt, i) in choiceOptions" :key="i" :class="optionState(opt)">{{ i + 1 }}) {{ opt }}</span>
+      <span v-for="(opt, i) in choiceOptions" :key="i" :class="optionState(opt)">
+        {{ i + 1 }}) {{ opt.text }}
+        <Media v-if="opt.attachment" :src="opt.attachment" class="option-media" />
+      </span>
     </div>
   </div>
 </template>
