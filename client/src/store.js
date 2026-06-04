@@ -75,7 +75,7 @@ export const store = reactive({
     const q = this.currentQuestion;
     if (!q) return false;
     if (q.type === 'True or False') return ['true', 'false'].includes(norm(q.currentAnswer));
-    if (q.type === 'Multiple Choice') return q.options.some((o) => norm(o) === norm(q.currentAnswer));
+    if (q.type === 'Multiple Choice') return q.options.some((o) => norm(o.text) === norm(q.currentAnswer));
     return false;
   },
   // For gradable questions: was the selected option correct? null when not gradable.

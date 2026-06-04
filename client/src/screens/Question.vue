@@ -27,14 +27,15 @@ function shuffle(arr) {
   return a;
 }
 
-// The options shown for the current question, by type.
+// The options shown for the current question, by type. Each entry is an
+// { text, attachment } object; attachments render as media beside the option.
 const displayOptions = ref([]);
 function buildOptions() {
   const cur = q.value;
   if (!cur) return (displayOptions.value = []);
-  if (cur.type === 'True or False') displayOptions.value = ['TRUE', 'FALSE'];
+  if (cur.type === 'True or False') displayOptions.value = cur.options; // fixed TRUE/FALSE order
   else if (cur.type === 'Multiple Choice') displayOptions.value = shuffle(cur.options);
-  else displayOptions.value = []; // Single Choice / w-Media have no clickable options
+  else displayOptions.value = []; // Single Choice has no clickable options
 }
 
 const hasHint = computed(() => !!q.value?.hint);
@@ -101,7 +102,7 @@ function showHint() {
 }
 function submit() {
   clearTimer();
-  const chosen = selected.value != null ? displayOptions.value[selected.value] : null;
+  const chosen = selected.value != null ? displayOptions.value[selected.value].text : null;
   store.submitQuestion(chosen);
 }
 
@@ -148,7 +149,7 @@ const mmss = computed(() => {
     <div class="qnum">Question #{{ store.index + 1 }} of {{ store.questions.length }}:</div>
     <div class="qtext">{{ q.question }}</div>
 
-    <Media v-if="q.type === 'Single Choice w/ Media'" :src="q.attachment" />
+    <Media v-if="q.attachment" :src="q.attachment" />
 
     <p v-if="isReading" class="reading-hint">Reading time — press <kbd>Space</kbd> to skip</p>
 
@@ -162,7 +163,8 @@ const mmss = computed(() => {
           @click="selectOption(i)"
         >
           <span class="num">{{ i + 1 }}</span>
-          <span>{{ opt }}</span>
+          <span v-if="opt.text">{{ opt.text }}</span>
+          <Media v-if="opt.attachment" :src="opt.attachment" class="option-media" />
         </div>
       </div>
 

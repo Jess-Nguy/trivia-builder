@@ -205,6 +205,15 @@ body {
   flex-shrink: 0;
 }
 
+/* Per-option media sits inline beside the option text, kept small so a row of
+   options with thumbnails stays readable. */
+.option-media { margin: 0; }
+.option-media.media-wrap img,
+.option-media.media-wrap video { max-height: 120px; border-radius: 8px; }
+.option-media.media-wrap .yt-embed { width: 240px; }
+.answer-options .option-media.media-wrap img,
+.answer-options .option-media.media-wrap video { max-height: 90px; }
+
 .q-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
 
 /* Answer reveal */

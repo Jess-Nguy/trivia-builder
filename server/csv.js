@@ -11,12 +11,26 @@ const TYPES = {
   'single choice': 'Single Choice',
   'multiple choice': 'Multiple Choice',
   'true or false': 'True or False',
-  'single choice w/ media': 'Single Choice w/ Media',
 };
+
+// Legacy type names accepted for backward compatibility and folded into a
+// canonical type. `Single Choice w/ Media` was retired: any question can now
+// carry a `Question Attachments` value (shown regardless of type), so a media
+// question is just a Single Choice with an attachment.
+const TYPE_ALIASES = {
+  'single choice w/ media': 'Single Choice',
+  'multiple choice w/ media': 'Multiple Choice',
+};
+
+const resolveType = (raw) => TYPES[raw] || TYPE_ALIASES[raw];
 
 const COLUMNS = [
   'Question', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5',
-  'Current Answer', 'Categories', 'Type', 'Attachments', 'Points', 'Hint 1',
+  'Current Answer', 'Categories', 'Type', 'Question Attachments', 'Points', 'Hint 1',
+  // Per-option media: a URL shown next to the matching option (Multiple Choice
+  // and True or False). An option is valid with text, an attachment, or both.
+  'Option 1 Attachment', 'Option 2 Attachment', 'Option 3 Attachment',
+  'Option 4 Attachment', 'Option 5 Attachment',
   // Optional: prose shown on the Answer Reveal page. Keeping it separate lets
   // `Current Answer` stay an exact answer for grading.
   'Explanation',
@@ -68,7 +82,7 @@ export function parseCsv(filePath) {
     const rawType = get('Type');
     const rawPoints = get('Points');
     const hint = get('Hint 1');
-    const type = TYPES[rawType.toLowerCase()];
+    const type = resolveType(rawType.toLowerCase());
 
     const rowProblems = [];
     if (!question) rowProblems.push({ field: 'Question', message: 'Question is required.' });
@@ -113,9 +127,21 @@ export function parseCsv(filePath) {
       }
     }
 
-    const options = [
-      get('Option 1'), get('Option 2'), get('Option 3'), get('Option 4'), get('Option 5'),
-    ].filter(Boolean);
+    // Each option carries optional text and an optional media attachment. An
+    // option "exists" when either is filled — so an image-only option (no text)
+    // is still a valid, selectable choice.
+    let options;
+    if (type === 'True or False') {
+      // The two choices are fixed; attachments map positionally to TRUE/FALSE.
+      options = [
+        { text: 'TRUE', attachment: get('Option 1 Attachment') },
+        { text: 'FALSE', attachment: get('Option 2 Attachment') },
+      ];
+    } else {
+      options = [1, 2, 3, 4, 5]
+        .map((n) => ({ text: get(`Option ${n}`), attachment: get(`Option ${n} Attachment`) }))
+        .filter((o) => o.text || o.attachment);
+    }
 
     // Options are required only for Multiple Choice.
     if (type === 'Multiple Choice' && options.length < 2) {
@@ -142,7 +168,8 @@ export function parseCsv(filePath) {
       currentAnswer,
       categories,
       type,
-      attachment: get('Attachments'),
+      // `Question Attachments` is the current header; older files used `Attachments`.
+      attachment: get('Question Attachments') || get('Attachments'),
       points,
       hint,
       explanation: get('Explanation'), // optional column; '' when absent
