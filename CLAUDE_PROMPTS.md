@@ -65,3 +65,7 @@ Another feature needs to added to use `Option 1 Attachment`, `Option 2 Attachmen
 
 1. early exit button to end the game prematurely during any point of the game play. APPLED.
 2. to announce if the answer selected was wrong or not in the answer yellow page. if it was wrong and not hints were taken then skip the manual scoreboard page because no one gets points and no one needs to get subtractions/add a counter for hints. if it's wrong but a hint was used then still go to manual scoreboard but no points should be allotted to be distributed. APPLIED.
+
+- Is it possible to have the app remember which questions that have already been played and not play them again for each app load session? For example say I set up a game to load "import/Official JUNE 5th - 217q - Trivia Mix w_ hints.csv" and I do 20 questions for 1 game mode. I finish them but then I do another 20 questions. I don't want the game to give me the same questions again. If needed a new feature could be added where there's a proper shutdown button that would clear the cache out. Or maybe this data can be stored in a csv copy of the import file under. `session/Copy <now's timestamp>- Official JUNE 5th - 217q - Trivia Mix w_ hints.csv` Ask me any question for clarification.
+
+- I need you to add new feature where there's a button to properly shutdown the game and clear the cache out for it.

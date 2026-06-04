@@ -171,6 +171,20 @@ body {
 .error { color: #b3261e; font-weight: 600; margin-top: 10px; }
 .hint-text { color: var(--muted); font-size: 14px; }
 
+/* Played-history row: count on the left, a clear link on the right. */
+.played-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--btn-yellow-hover);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-link:hover { color: var(--ink); }
+
 /* Question */
 .category { text-align: center; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
 .qnum { font-size: 22px; font-weight: 700; margin-top: 6px; }

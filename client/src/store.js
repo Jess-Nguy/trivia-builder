@@ -22,6 +22,25 @@ const norm = (s) => String(s ?? '').trim().toLowerCase();
 // and carry across rounds.
 const NAMES_KEY = 'trivia-player-names';
 
+// localStorage key for the set of questions already played, so a question isn't
+// served twice across games/reloads. Shape: { [fileName]: string[] } where each
+// string is a question's content key (see questionKey). Keyed per file so each
+// CSV has its own independent pool. Cleared only via the Clear button.
+const PLAYED_KEY = 'trivia-played-questions';
+
+// A stable per-question identity within a file. Uses the normalized question
+// text rather than the row index so it survives the CSV being edited/reordered.
+const questionKey = (q) => norm(q?.question);
+
+function loadPlayed() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(PLAYED_KEY));
+    return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
+  } catch {
+    return {};
+  }
+}
+
 // The default numbered name shown when a player's custom name is blank.
 const defaultName = (i) => `Team/User ${i + 1}`;
 
@@ -53,6 +72,16 @@ export const store = reactive({
   // numbered name". Persisted to localStorage and kept across rounds so a name
   // typed for one game is still there for the next.
   playerNames: loadNames(),
+
+  // Played-question history by file name: { [fileName]: string[] of question
+  // keys }. Persisted to localStorage; a question is added the moment its Answer
+  // Reveal screen shows (see submitQuestion), and excluded from future games.
+  playedByFile: loadPlayed(),
+
+  // Notice set by startGame when the unplayed pool was smaller than requested,
+  // so the UI can warn that only the remaining questions were served. Holds
+  // { requested, served } or null.
+  exhaustedNotice: null,
 
   questions: [],
   index: 0,
@@ -158,6 +187,44 @@ export const store = reactive({
     }
   },
 
+  persistPlayed() {
+    try {
+      localStorage.setItem(PLAYED_KEY, JSON.stringify(this.playedByFile));
+    } catch {
+      /* storage unavailable — played history just won't persist this session */
+    }
+  },
+
+  // The set of question keys already played for a file, for filtering/counting.
+  playedKeysForFile(fileName) {
+    return new Set(this.playedByFile[fileName] || []);
+  },
+
+  // How many of the given questions are still unplayed for a file.
+  unplayedCount(fileName, questions) {
+    const played = this.playedKeysForFile(fileName);
+    return questions.reduce((n, q) => n + (played.has(questionKey(q)) ? 0 : 1), 0);
+  },
+
+  // Record a question as played for its file (idempotent) and persist.
+  markPlayed(fileName, question) {
+    if (!fileName || !question) return;
+    const key = questionKey(question);
+    const list = this.playedByFile[fileName] || (this.playedByFile[fileName] = []);
+    if (!list.includes(key)) {
+      list.push(key);
+      this.persistPlayed();
+    }
+  },
+
+  // Wipe the played history for a single file and persist.
+  clearPlayed(fileName) {
+    if (this.playedByFile[fileName]) {
+      delete this.playedByFile[fileName];
+      this.persistPlayed();
+    }
+  },
+
   startGame(settings, allQuestions) {
     this.settings = { ...settings };
     this.players = Array.from({ length: settings.numPlayers }, (_, i) => ({
@@ -167,8 +234,16 @@ export const store = reactive({
       points: 0,
       hints: 0,
     }));
-    // Random sample of the requested number of questions.
-    this.questions = shuffle(allQuestions).slice(0, settings.numQuestions);
+    // Exclude questions already played for this file, then take a random sample
+    // of the requested size. If fewer unplayed remain than requested, serve
+    // what's left and flag the shortfall so the UI can warn.
+    const played = this.playedKeysForFile(settings.fileName);
+    const unplayed = allQuestions.filter((q) => !played.has(questionKey(q)));
+    this.questions = shuffle(unplayed).slice(0, settings.numQuestions);
+    this.exhaustedNotice =
+      this.questions.length < settings.numQuestions
+        ? { requested: settings.numQuestions, served: this.questions.length }
+        : null;
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;
@@ -183,6 +258,9 @@ export const store = reactive({
 
   submitQuestion(selectedAnswer = null) {
     this.selectedAnswer = selectedAnswer;
+    // The Answer Reveal screen is now showing this question — record it as
+    // played so it won't be served in future games.
+    this.markPlayed(this.settings.fileName, this.currentQuestion);
     this.screen = 'answer';
   },
 
@@ -238,6 +316,7 @@ export const store = reactive({
   reset() {
     this.players = [];
     this.questions = [];
+    this.exhaustedNotice = null;
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;

@@ -57,6 +57,24 @@ const allSelected = computed(
 const maxQuestions = computed(() => filteredQuestions.value.length || 1);
 const fileSelected = computed(() => !!form.fileName && !!loaded.value);
 
+// How many of the currently filtered questions haven't been played yet for this
+// file. Reactive to store.playedByFile, so it updates after a game or a clear.
+const unplayedCount = computed(() =>
+  store.unplayedCount(form.fileName, filteredQuestions.value),
+);
+// Every filtered question has already been played — nothing left to serve.
+const allPlayed = computed(
+  () => fileSelected.value && filteredQuestions.value.length > 0 && unplayedCount.value === 0,
+);
+// Fewer unplayed remain than requested: the game will serve only what's left.
+const shortPool = computed(
+  () => unplayedCount.value > 0 && form.numQuestions > unplayedCount.value,
+);
+
+function clearPlayed() {
+  store.clearPlayed(form.fileName);
+}
+
 // One entry per visible team/user slot, for rendering the name inputs.
 const teamSlots = computed(() => Array.from({ length: form.numPlayers }, (_, i) => i));
 
@@ -140,6 +158,7 @@ function clampTimer() {
 
 function startGame() {
   if (!fileSelected.value || filteredQuestions.value.length === 0) return;
+  if (allPlayed.value) return;
   if (hasDuplicateNames.value) return;
   clampPlayers();
   clampQuestions();
@@ -238,8 +257,25 @@ function startGame() {
     <p v-if="fileSelected && categories.length" class="hint-text">
       {{ filteredQuestions.length }} question(s) match the selected categor{{ selectedCategories.length === 1 ? 'y' : 'ies' }}.
     </p>
+    <p v-if="fileSelected && filteredQuestions.length" class="hint-text played-row">
+      <span>{{ unplayedCount }} of {{ filteredQuestions.length }} still unplayed for this file.</span>
+      <button
+        v-if="unplayedCount < filteredQuestions.length"
+        type="button"
+        class="btn-link clear-played"
+        @click="clearPlayed"
+      >
+        Clear played history
+      </button>
+    </p>
     <p v-if="fileSelected && categories.length && selectedCategories.length === 0" class="error">
       Select at least one category to play.
+    </p>
+    <p v-if="allPlayed" class="error">
+      Every question in this selection has been played. Clear played history to replay them.
+    </p>
+    <p v-if="shortPool" class="hint-text">
+      Only {{ unplayedCount }} unplayed question(s) remain — this game will play those.
     </p>
     <p v-if="hasDuplicateNames" class="error">
       Each team/user needs a unique name.
@@ -249,7 +285,7 @@ function startGame() {
     <div class="start-wrap">
       <button
         class="btn btn-green"
-        :disabled="!fileSelected || filteredQuestions.length === 0 || hasDuplicateNames"
+        :disabled="!fileSelected || filteredQuestions.length === 0 || allPlayed || hasDuplicateNames"
         @click="startGame"
       >
         START GAME
