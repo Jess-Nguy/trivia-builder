@@ -39,19 +39,44 @@ Columns (header row required):
 
 ```csv
 Question, Option 1, Option 2, Option 3, Option 4, Option 5,
-Current Answer, Categories, Type, Attachments, Points, Hint 1, Explanation
+Current Answer, Categories, Type, Question Attachments, Points, Hint 1,
+Option 1 Attachment, Option 2 Attachment, Option 3 Attachment,
+Option 4 Attachment, Option 5 Attachment, Explanation,
+question timer delay by secs
 ```
 
-- **Required:** `Question`, `Current Answer`, `Type`, `Points`.
-- **Type** must be one of: `Single Choice`, `Multiple Choice`, `True or False`, `Single Choice w/ Media`.
+- **Required:** `Question`, `Current Answer`, `Type`. (`Points` is now optional —
+  see *Points* below.)
+- **Type** must be one of: `Single Choice`, `Multiple Choice`, `True or False`.
+  The old `Single Choice w/ Media` type was retired — **any** type can now carry
+  media, so a media question is just a `Single Choice` with a `Question Attachments`
+  value. Legacy type names (`Single Choice w/ Media`, `Multiple Choice w/ Media`)
+  are still accepted and folded into their base type for backward compatibility.
 - **Options** are required only for `Multiple Choice` (at least 2). `True or False`
-  hardcodes TRUE/FALSE; `Single Choice` and `Single Choice w/ Media` use no options.
+  hardcodes TRUE/FALSE; `Single Choice` uses no options. An option counts as
+  present when **either** its `Option N` text **or** its `Option N Attachment` is
+  filled — so an image-only option (no text) is still a valid, selectable choice.
 - **Categories** may be comma-separated for multiple categories.
-- **Attachments** (for `Single Choice w/ Media`) is an image/video/audio URL. Keep
-  video/audio to ~1 minute.
+- **Question Attachments** is an image/video/audio URL shown with the question,
+  regardless of type. Keep video/audio short (~1 minute). YouTube URLs
+  (`watch`, `youtu.be`, `embed`, `shorts`, with optional start time) are detected
+  and embedded automatically; everything else is treated as image/video/audio by
+  its file extension. *(Older files that still use an `Attachments` column header
+  keep working — it's read as a fallback.)*
+- **Option N Attachment** (`Option 1 Attachment`…`Option 5 Attachment`) is an
+  optional per-option image/video/audio URL, rendered next to that option for
+  `Multiple Choice` and `True or False` questions.
+- **Points** (optional): when blank, it's defaulted by hint presence — a question
+  *with* a hint is worth `2`, one *without* is worth `1` — and the defaulted value
+  is **written back into the CSV** so it persists next time. When present it must
+  be a number.
 - **Hint 1** is optional; a HINT button appears only when it's filled in.
 - **Explanation** (optional) is prose shown on the Answer Reveal page. Keep it
   separate so `Current Answer` can stay an *exact* answer.
+- **question timer delay by secs** (optional): a non-negative number of seconds to
+  pause *before* the question goes live. During the delay the question (and its
+  media) shows while options/buttons stay hidden, so the host can read it aloud;
+  the answer timer only starts once the delay ends or is skipped. Blank/0 = none.
 
 Rows that fail validation are skipped and reported on the Game Mode screen; they
 don't crash the app.
@@ -67,15 +92,36 @@ isn't an exact match (and all open-answer types) aren't graded — they go to th
 manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
 `Explanation`) is what unlocks grading.
 
+## Setting up a game (Game Mode screen)
+
+- **Teams/users:** 1–8. Each slot has an editable name (blank = a default
+  `Team/User N`). Names are saved to the browser's localStorage so they survive
+  reloads and carry across rounds; two teams can't share a name (case-insensitive).
+- **Questions file:** dropdown of every `.csv` in `/import`.
+- **Category filter:** once a file loads, its categories appear as checkboxes
+  (with a "Select all"). Pick one or more to narrow the pool to questions in those
+  categories; questions with no category fall into an `Uncategorized` bucket so they
+  stay playable. The question-count field clamps to the size of the filtered pool.
+- **Number of questions, timer, and the record/subtract checkboxes** work as before.
+
 ## How a game flows
 
 Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final Scores.
 
+- **Reading delay:** if a question has a `question timer delay by secs` value, it
+  opens in a reading phase (question + media visible, options hidden) counting down
+  that many seconds. Press `Space` to skip straight to answering.
 - **Timer:** set per-question seconds (0 = none, max 300). At 0 the question
   auto-advances to the answer.
+- **Question screen keys:** `1`–`5` select an option, `H` reveals the hint (when
+  one exists), `Enter` submits.
 - **Manual Scoreboard** appears after each question to award points/hints. It's
   skipped entirely if neither "record points" nor "record how many hints taken"
   is enabled. Keyboard: `1`–`8` select a player, `+`/`-` adjust points, `]`/`[`
   adjust hints, `Enter` = next.
 - **Final Scores** tallies points, hints, and total (total subtracts hints when
   "hints subtracts points" is on), names the winner, and `Next` returns to Game Mode.
+
+A **fullscreen toggle** sits in the corner on every screen (great for casting the
+game to a TV). The screen always autoplays video/YouTube media — and masks the
+YouTube title bar — so a paused thumbnail or title can't give the answer away.

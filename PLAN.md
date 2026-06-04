@@ -69,13 +69,13 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 - Common header: categories, question counter, timer slot, HINT? button only when `hint` is non-empty (reveals hint; increments the per-question hints-taken count + the hint tally if hint-recording on).
 - **Multiple Choice:** render non-empty options as `1)…5)`, selectable by click or number key; option order randomizable.
 - **True or False:** hardcode TRUE/FALSE as the numbered options.
-- **Single Choice / w-Media:** no options.
-- **Media:** render `Attachments` as image / video / audio.
+- **Single Choice:** no options.
+- **Media:** render the question's `Question Attachments` as image / video / audio (for any type). See Phase 9 for per-option media and YouTube/autoplay handling added post-v1.
 - SUBMIT advances to the **Answer Reveal** screen (mouse) and also bind Enter.
 - **Answer Reveal screen:** show categories, the question, "Answer was: " + full `Current Answer`, and re-list options for choice types. NEXT (mouse/Enter) → Scoreboard (or next question if skipped).
 
-**Deliverable:** Each of the four types renders, and SUBMIT leads to the answer screen.
-**Verify:** Walk one question of each type from the June-2 file; the media question renders its image; hint button appears only where a hint exists; the Answer Reveal screen shows the full answer for every type.
+**Deliverable:** Each of the three types renders, and SUBMIT leads to the answer screen.
+**Verify:** Walk one question of each type from the sample file; the media question renders its image; hint button appears only where a hint exists; the Answer Reveal screen shows the full answer for every type.
 
 ---
 
@@ -127,6 +127,24 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 
 **Deliverable:** A polished, documented, runnable v1.
 **Verify:** Fresh clone → `npm install` → `npm run dev` → play a full game from the sample CSV with no console errors.
+
+---
+
+## Phase 9 — Post-v1 enhancements
+
+Built after the initial v1 was complete (see SCOPE §4 Features 17–22). Each shipped on its own branch/PR.
+
+**Tasks**
+- **Question-type refactor + attachments:** retire `Single Choice w/ Media`; let **any** type carry `Question Attachments`; add per-option `Option 1..5 Attachment` columns (Multiple Choice / True or False), where an option is valid with text, an attachment, or both. Keep legacy `… w/ Media` type names working.
+- **Points backfill:** make `Points` optional — default a blank value by hint presence (hint → 2, none → 1) and write it back to the CSV.
+- **Media hardening:** extract YouTube ids (watch/youtu.be/embed/shorts + start time) and embed via the privacy-enhanced host; autoplay video/YouTube and mask the YouTube title bar so the answer can't leak; add `referrerpolicy="no-referrer"` to images.
+- **Category filter:** on Game Mode, list the file's categories as checkboxes (+ "Select all"), filter the play pool, bucket category-less questions as `Uncategorized`, and clamp the question count to the filtered pool.
+- **Custom team names:** editable per-slot names persisted to localStorage, carried across rounds, with case-insensitive duplicate prevention.
+- **Reading delay:** support a `question timer delay by secs` column that shows the question/media with options hidden for a countdown (Space skips) before the answer timer starts.
+- **Fullscreen toggle:** a global button to enter/exit fullscreen on every screen.
+
+**Deliverable:** The enhancements above, each verifiable against its SCOPE acceptance row.
+**Verify:** Per-feature checks in SCOPE §4 Features 17–22 pass; the sample CSVs in `/import` load and play with media, categories, custom names, and reading delays.
 
 ---
 
