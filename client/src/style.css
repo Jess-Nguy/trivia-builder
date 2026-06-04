@@ -68,6 +68,10 @@ body {
   font-size: 22px;
   font-weight: 800;
 }
+/* Reading-delay countdown: distinct from the answer timer so the host can tell
+   the reading phase apart at a glance. */
+.reading-timer { color: var(--orange, #e08a2b); }
+.reading-hint { text-align: center; color: var(--muted); font-size: 14px; margin-top: 12px; }
 
 /* Buttons */
 .btn {

@@ -20,6 +20,9 @@ const COLUMNS = [
   // Optional: prose shown on the Answer Reveal page. Keeping it separate lets
   // `Current Answer` stay an exact answer for grading.
   'Explanation',
+  // Optional: seconds to pause before the question is "live" — the host reads it
+  // aloud while options stay hidden. 0 or blank means no delay.
+  'question timer delay by secs',
 ];
 
 /** List every .csv filename in the import directory. */
@@ -93,6 +96,23 @@ export function parseCsv(filePath) {
       }
     }
 
+    // Reading delay (seconds): a non-negative number the host can use to read
+    // the question aloud before options appear. Invalid/blank values are a
+    // problem only when present and non-numeric; otherwise they default to 0.
+    const rawDelay = get('question timer delay by secs');
+    let delaySecs = 0;
+    if (rawDelay) {
+      const n = Number(rawDelay);
+      if (!Number.isFinite(n) || n < 0) {
+        rowProblems.push({
+          field: 'question timer delay by secs',
+          message: `Timer delay must be a non-negative number (got "${rawDelay}").`,
+        });
+      } else {
+        delaySecs = n;
+      }
+    }
+
     const options = [
       get('Option 1'), get('Option 2'), get('Option 3'), get('Option 4'), get('Option 5'),
     ].filter(Boolean);
@@ -126,6 +146,7 @@ export function parseCsv(filePath) {
       points,
       hint,
       explanation: get('Explanation'), // optional column; '' when absent
+      delaySecs, // reading-delay seconds before options appear (0 = none)
     });
   });
 

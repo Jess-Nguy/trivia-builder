@@ -10,6 +10,14 @@ const hintShown = ref(false);
 const remaining = ref(0);
 let timerId = null;
 
+// Reading-delay phase: when a question has `delaySecs > 0`, we first show the
+// question (and media) with options/buttons hidden so the host can read it
+// aloud. The answer timer only starts once the delay ends (or is skipped).
+const phase = ref('answering'); // 'reading' | 'answering'
+const delayRemaining = ref(0);
+let delayId = null;
+const isReading = computed(() => phase.value === 'reading');
+
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -49,11 +57,37 @@ function clearTimer() {
   timerId = null;
 }
 
+// Start the reading delay: count down `delaySecs`, then begin answering.
+function startReading() {
+  clearDelay();
+  phase.value = 'reading';
+  delayRemaining.value = q.value.delaySecs;
+  delayId = setInterval(() => {
+    delayRemaining.value -= 1;
+    if (delayRemaining.value <= 0) beginAnswering();
+  }, 1000);
+}
+function clearDelay() {
+  if (delayId) clearInterval(delayId);
+  delayId = null;
+}
+// Reveal options/buttons and start the regular answer timer.
+function beginAnswering() {
+  clearDelay();
+  phase.value = 'answering';
+  startTimer();
+}
+// Skip the reading delay (Space) — jump straight to answering.
+function skipDelay() {
+  if (isReading.value) beginAnswering();
+}
+
 function resetForQuestion() {
   selected.value = null;
   hintShown.value = false;
   buildOptions();
-  startTimer();
+  if (q.value?.delaySecs > 0) startReading();
+  else beginAnswering();
 }
 
 function selectOption(i) {
@@ -72,6 +106,14 @@ function submit() {
 }
 
 function onKey(e) {
+  // While reading, only Space (skip the delay) is active; ignore answer keys.
+  if (isReading.value) {
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      return skipDelay();
+    }
+    return;
+  }
   if (e.key === 'Enter') return submit();
   if (e.key.toLowerCase() === 'h' && hasHint.value) return showHint();
   const n = parseInt(e.key, 10);
@@ -85,6 +127,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
   clearTimer();
+  clearDelay();
   window.removeEventListener('keydown', onKey);
 });
 
@@ -98,7 +141,8 @@ const mmss = computed(() => {
   <div class="panel" v-if="q">
     <EndGameButton />
     <div class="brand">Trivia Builder</div>
-    <div v-if="store.settings.timer > 0" class="timer">{{ mmss }}</div>
+    <div v-if="isReading" class="timer reading-timer">📖 Reading… {{ delayRemaining }}</div>
+    <div v-else-if="store.settings.timer > 0" class="timer">{{ mmss }}</div>
 
     <div class="category">Category: {{ q.categories.join(', ') || '—' }}</div>
     <div class="qnum">Question #{{ store.index + 1 }} of {{ store.questions.length }}:</div>
@@ -106,25 +150,29 @@ const mmss = computed(() => {
 
     <Media v-if="q.type === 'Single Choice w/ Media'" :src="q.attachment" />
 
-    <div class="options" v-if="displayOptions.length">
-      <div
-        v-for="(opt, i) in displayOptions"
-        :key="i"
-        class="option"
-        :class="{ selected: selected === i }"
-        @click="selectOption(i)"
-      >
-        <span class="num">{{ i + 1 }}</span>
-        <span>{{ opt }}</span>
+    <p v-if="isReading" class="reading-hint">Reading time — press <kbd>Space</kbd> to skip</p>
+
+    <template v-else>
+      <div class="options" v-if="displayOptions.length">
+        <div
+          v-for="(opt, i) in displayOptions"
+          :key="i"
+          class="option"
+          :class="{ selected: selected === i }"
+          @click="selectOption(i)"
+        >
+          <span class="num">{{ i + 1 }}</span>
+          <span>{{ opt }}</span>
+        </div>
       </div>
-    </div>
 
-    <p v-if="hintShown" class="hint-text" style="font-size: 18px">💡 {{ q.hint }}</p>
+      <p v-if="hintShown" class="hint-text" style="font-size: 18px">💡 {{ q.hint }}</p>
 
-    <div class="q-actions">
-      <button v-if="hasHint" class="btn btn-orange" @click="showHint">HINT?</button>
-      <span v-else></span>
-      <button class="btn btn-green" @click="submit">SUBMIT</button>
-    </div>
+      <div class="q-actions">
+        <button v-if="hasHint" class="btn btn-orange" @click="showHint">HINT?</button>
+        <span v-else></span>
+        <button class="btn btn-green" @click="submit">SUBMIT</button>
+      </div>
+    </template>
   </div>
 </template>
