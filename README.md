@@ -59,10 +59,21 @@ question timer delay by secs
 - **Categories** may be comma-separated for multiple categories.
 - **Question Attachments** is an image/video/audio URL shown with the question,
   regardless of type. Keep video/audio short (~1 minute). YouTube URLs
-  (`watch`, `youtu.be`, `embed`, `shorts`, with optional start time) are detected
-  and embedded automatically; everything else is treated as image/video/audio by
-  its file extension. *(Older files that still use an `Attachments` column header
-  keep working — it's read as a fallback.)*
+  (`watch`, `youtu.be`, `embed`, `shorts`, `music.youtube.com`, with optional start
+  time) are detected and embedded automatically; everything else is treated as
+  image/video/audio by its file extension. *(Older files that still use an
+  `Attachments` column header keep working — it's read as a fallback.)*
+- **Audio-only YouTube ("name this song" questions):** a YouTube embed always shows
+  the video, whose thumbnail or on-screen title can give the answer away. To play a
+  YouTube link as **audio only**, add `#audio` to the end of the URL (e.g.
+  `https://youtu.be/9bZkp7q19f0#audio`, or with a start time
+  `…?t=30#audio`; `&audio=1` also works). The question then renders a compact audio
+  player — play/pause button, progress bar, and elapsed/total time — while the video
+  plays hidden, so nothing on screen spoils the answer. Works for option attachments
+  too. Notes: the track tries to autoplay on landing, but if the browser blocks
+  autoplay-with-sound the **play button always works** (it's a direct user action);
+  this needs the YouTube IFrame API, so an ad/tracker blocker that blocks
+  `youtube.com/iframe_api` will stop it (the same dependency as background music).
 - **Option N Attachment** (`Option 1 Attachment`…`Option 5 Attachment`) is an
   optional per-option image/video/audio URL, rendered next to that option for
   `Multiple Choice` and `True or False` questions.
@@ -148,7 +159,10 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
 
 A **fullscreen toggle** sits in the corner on every screen (great for casting the
 game to a TV). The screen always autoplays video/YouTube media — and masks the
-YouTube title bar — so a paused thumbnail or title can't give the answer away.
+YouTube title bar — so a paused thumbnail or title can't give the answer away. For
+"name this song" questions where even the video would spoil it, tag the YouTube link
+with `#audio` to play it as audio only with the video fully hidden (see
+*Question Attachments* above).
 
 **Background music auto-pause:** when a question (or one of its options) has its own
 YouTube/video/audio media on screen, the background music **pauses automatically**
