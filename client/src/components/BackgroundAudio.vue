@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { store } from '../store.js';
-import { youTubeId } from '../youtube.js';
+import { youTubeId, loadYouTubeApi } from '../youtube.js';
 
 // Persistent background-music player. Mounted once in App.vue (outside the
 // screen <component>) so it keeps playing across screen changes. Uses the
@@ -18,24 +18,6 @@ const active = computed(() => !!videoId.value);
 
 // Pause the music while a question's own YouTube/video/audio is on screen.
 const pausedForMedia = computed(() => store.mediaSoundCount > 0);
-
-// Load the IFrame API exactly once and resolve when window.YT is usable.
-function loadApi() {
-  if (window.YT && window.YT.Player) return Promise.resolve();
-  if (!window.__ytApiPromise) {
-    window.__ytApiPromise = new Promise((resolve) => {
-      const prev = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (typeof prev === 'function') prev();
-        resolve();
-      };
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      document.head.appendChild(tag);
-    });
-  }
-  return window.__ytApiPromise;
-}
 
 function applyVolume() {
   if (player && ready && player.setVolume) player.setVolume(store.audio.volume);
@@ -65,7 +47,7 @@ function destroyPlayer() {
 // to the same id, which is cleanest to establish at construction.
 async function buildPlayer() {
   if (!videoId.value || !host.value) return;
-  await loadApi();
+  await loadYouTubeApi();
   // Bail if the track changed/cleared while the API was loading.
   if (!videoId.value || !host.value) return;
   destroyPlayer();
