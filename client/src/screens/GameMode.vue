@@ -1,15 +1,24 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { store } from '../store.js';
-import { fetchFiles, fetchQuestions } from '../api.js';
+import { fetchFiles, fetchQuestions, fetchBackgroundAudio } from '../api.js';
 
 // Label for questions that carry no category, so they remain playable when
 // filtering is active rather than being silently dropped from the pool.
 const UNCATEGORIZED = 'Uncategorized';
 
 const files = ref([]);
+const audioTracks = ref([]); // background-music options from background audio.csv
 const error = ref('');
 const loading = ref(false);
+
+// The store holds the selected track live (it plays on this page too), so the
+// dropdown binds straight to it. Setting an empty link turns music off.
+function onAudioChange(e) {
+  const link = e.target.value;
+  const track = audioTracks.value.find((t) => t.link === link);
+  store.setAudioTrack(track || { link: '', title: '' });
+}
 
 // Parsed data for the currently selected file.
 const loaded = ref(null); // { questions, problems, total }
@@ -118,6 +127,9 @@ onMounted(async () => {
   } catch (e) {
     error.value = e.message;
   }
+  // Background-music options load independently — a failure here just leaves the
+  // picker at "None" and never blocks question setup.
+  audioTracks.value = await fetchBackgroundAudio();
 });
 
 async function onFileChange() {
@@ -242,6 +254,14 @@ function startGame() {
     <div class="form-row">
       <label>Question Timer<br /><span class="hint-text">(default 0 = no timer, max 300s)</span></label>
       <input type="number" min="0" max="300" v-model.number="form.timer" @change="clampTimer" />
+    </div>
+
+    <div v-if="audioTracks.length" class="form-row">
+      <label>Background music<br /><span class="hint-text">(loops during the game)</span></label>
+      <select :value="store.audio.link" @change="onAudioChange">
+        <option value="">— None —</option>
+        <option v-for="t in audioTracks" :key="t.link" :value="t.link">{{ t.title || t.link }}</option>
+      </select>
     </div>
 
     <div class="checks">

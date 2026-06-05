@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { listFiles, resolveImportPath, parseCsv } from './csv.js';
+import { listFiles, resolveImportPath, parseCsv, listAudioTracks } from './csv.js';
 
 // Connect-style middleware that serves the trivia API. Mounted by both the
 // Vite dev server (in dev) and Express (in production) so the API lives in one
@@ -18,6 +18,7 @@ export function apiMiddleware(req, res, next) {
   try {
     if (p === '/api/health') return send(200, { ok: true });
     if (p === '/api/files') return send(200, { files: listFiles() });
+    if (p === '/api/background-audio') return send(200, { tracks: listAudioTracks() });
     if (p.startsWith('/api/files/')) {
       const name = decodeURIComponent(p.slice('/api/files/'.length));
       const filePath = resolveImportPath(name);

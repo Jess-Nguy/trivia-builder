@@ -6,6 +6,10 @@ import Papa from 'papaparse';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const IMPORT_DIR = path.resolve(__dirname, '..', 'import');
 
+// Reserved CSV that holds background-music tracks (link,title), not questions.
+// Excluded from the question-file list and read separately (see listAudioTracks).
+const AUDIO_FILE = 'background audio.csv';
+
 // Canonical question types. Keys are lowercased for matching; values are display labels.
 const TYPES = {
   'single choice': 'Single Choice',
@@ -45,7 +49,23 @@ export function listFiles() {
   return fs
     .readdirSync(IMPORT_DIR)
     .filter((f) => f.toLowerCase().endsWith('.csv'))
+    .filter((f) => f.toLowerCase() !== AUDIO_FILE)
     .sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Read the background-audio track list from `background audio.csv` (columns
+ * `link,title`). Returns [{ link, title }] for rows with a non-blank link, or an
+ * empty array when the file is absent — so the picker simply offers "None".
+ */
+export function listAudioTracks() {
+  const filePath = path.resolve(IMPORT_DIR, AUDIO_FILE);
+  if (!fs.existsSync(filePath)) return [];
+  const text = fs.readFileSync(filePath, 'utf8');
+  const { data } = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
+  return data
+    .map((row) => ({ link: clean(row.link), title: clean(row.title) }))
+    .filter((t) => t.link);
 }
 
 /** Resolve a requested filename to a safe path inside IMPORT_DIR, or null if it escapes. */

@@ -320,6 +320,45 @@ kbd {
 }
 .fullscreen-btn:hover { color: var(--ink); border-color: #9fd6cf; }
 
+/* The background-audio player iframe is parked off-screen — present (so it loads
+   and autoplays) but invisible and non-interactive. Never display:none. */
+.bg-audio-hidden {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+  top: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Floating music control, bottom-right, mirroring the fullscreen pill. */
+.bg-audio-ctrl {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1.5px solid #c9d6d4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  z-index: 10;
+}
+.bg-audio-mute {
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.bg-audio-vol { width: 90px; cursor: pointer; }
+.bg-audio-vol:disabled { opacity: 0.4; cursor: default; }
+.bg-audio-paused-for-media { opacity: 0.6; }
+.bg-audio-paused { font-size: 13px; color: var(--muted); }
+
 .media-wrap { text-align: center; margin: 16px 0; }
 .media-wrap img, .media-wrap video { max-width: 100%; max-height: 360px; border-radius: 12px; }
 .media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; }

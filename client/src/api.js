@@ -13,3 +13,16 @@ export async function fetchQuestions(name) {
   if (!res.ok) throw new Error(data.error || 'Could not load questions.');
   return data; // { name, questions, problems, total }
 }
+
+// Background-music tracks from `import/background audio.csv`. Returns [] on any
+// failure so the picker just offers "None" rather than blocking the page.
+export async function fetchBackgroundAudio() {
+  try {
+    const res = await fetch('/api/background-audio');
+    if (!res.ok) return [];
+    const { tracks } = await res.json();
+    return Array.isArray(tracks) ? tracks : [];
+  } catch {
+    return [];
+  }
+}

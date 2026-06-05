@@ -132,7 +132,7 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 
 ## Phase 9 — Post-v1 enhancements
 
-Built after the initial v1 was complete (see SCOPE §4 Features 17–22). Each shipped on its own branch/PR.
+Built after the initial v1 was complete (see SCOPE §4 Features 17–23). Each shipped on its own branch/PR.
 
 **Tasks**
 - **Question-type refactor + attachments:** retire `Single Choice w/ Media`; let **any** type carry `Question Attachments`; add per-option `Option 1..5 Attachment` columns (Multiple Choice / True or False), where an option is valid with text, an attachment, or both. Keep legacy `… w/ Media` type names working.
@@ -142,9 +142,10 @@ Built after the initial v1 was complete (see SCOPE §4 Features 17–22). Each s
 - **Custom team names:** editable per-slot names persisted to localStorage, carried across rounds, with case-insensitive duplicate prevention.
 - **Reading delay:** support a `question timer delay by secs` column that shows the question/media with options hidden for a countdown (Space skips) before the answer timer starts.
 - **Fullscreen toggle:** a global button to enter/exit fullscreen on every screen.
+- **Background music:** a Game Mode picker fed by `import/background audio.csv` (`link,title`, kept out of the questions-file list); the chosen YouTube track loops across all screens via the IFrame Player API in a persistent component (mounted in `App.vue`, off-screen iframe). Add a bottom-right mute/volume control, persist the choice to localStorage, and auto-pause the music while a question's own YouTube/video/audio is on screen (a shared `youTubeId` helper extracted from `Media.vue`; a store counter tracks sound media).
 
 **Deliverable:** The enhancements above, each verifiable against its SCOPE acceptance row.
-**Verify:** Per-feature checks in SCOPE §4 Features 17–22 pass; the sample CSVs in `/import` load and play with media, categories, custom names, and reading delays.
+**Verify:** Per-feature checks in SCOPE §4 Features 17–23 pass; the sample CSVs in `/import` load and play with media, categories, custom names, and reading delays; a background track loops, mutes/adjusts volume, and pauses for question video.
 
 ---
 

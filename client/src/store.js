@@ -41,6 +41,27 @@ function loadPlayed() {
   }
 }
 
+// localStorage key for background-audio preferences (selected track + volume +
+// mute), so the host's music choice survives reloads and carries across rounds.
+const AUDIO_KEY = 'trivia-audio';
+
+const DEFAULT_AUDIO = { link: '', title: '', volume: 30, muted: false };
+
+function loadAudio() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(AUDIO_KEY));
+    if (!obj || typeof obj !== 'object') return { ...DEFAULT_AUDIO };
+    return {
+      link: String(obj.link ?? ''),
+      title: String(obj.title ?? ''),
+      volume: Number.isFinite(obj.volume) ? Math.min(100, Math.max(0, obj.volume)) : 30,
+      muted: !!obj.muted,
+    };
+  } catch {
+    return { ...DEFAULT_AUDIO };
+  }
+}
+
 // The default numbered name shown when a player's custom name is blank.
 const defaultName = (i) => `Team/User ${i + 1}`;
 
@@ -77,6 +98,17 @@ export const store = reactive({
   // keys }. Persisted to localStorage; a question is added the moment its Answer
   // Reveal screen shows (see submitQuestion), and excluded from future games.
   playedByFile: loadPlayed(),
+
+  // Background music: the selected YouTube track plus playback preferences.
+  // `link` empty means "None" (no music). Persisted to localStorage. The
+  // persistent BackgroundAudio component plays/loops this across all screens.
+  audio: loadAudio(),
+
+  // Count of sound-producing question media (YouTube/video/audio) currently on
+  // screen. While > 0 the background player pauses so the two don't clash; it
+  // resumes when this returns to 0. A counter (not a boolean) so overlapping
+  // media — e.g. several option videos — pause the music correctly.
+  mediaSoundCount: 0,
 
   // Notice set by startGame when the unplayed pool was smaller than requested,
   // so the UI can warn that only the remaining questions were served. Holds
@@ -185,6 +217,41 @@ export const store = reactive({
     } catch {
       /* storage unavailable (private mode, quota) — names just won't persist */
     }
+  },
+
+  // --- Background audio ---
+
+  // Select a track (or pass a falsy link / null to turn music off). Accepts a
+  // { link, title } object; missing title falls back to the link.
+  setAudioTrack(track) {
+    this.audio.link = String(track?.link ?? '');
+    this.audio.title = String(track?.title ?? track?.link ?? '');
+    this.persistAudio();
+  },
+  setAudioVolume(v) {
+    this.audio.volume = Math.min(100, Math.max(0, Math.round(Number(v) || 0)));
+    this.persistAudio();
+  },
+  setAudioMuted(muted) {
+    this.audio.muted = !!muted;
+    this.persistAudio();
+  },
+
+  persistAudio() {
+    try {
+      localStorage.setItem(AUDIO_KEY, JSON.stringify(this.audio));
+    } catch {
+      /* storage unavailable — audio prefs just won't persist this session */
+    }
+  },
+
+  // A sound-producing question media appeared / went away. The background player
+  // watches mediaSoundCount and pauses while it's above zero.
+  mediaSoundOn() {
+    this.mediaSoundCount += 1;
+  },
+  mediaSoundOff() {
+    this.mediaSoundCount = Math.max(0, this.mediaSoundCount - 1);
   },
 
   persistPlayed() {
