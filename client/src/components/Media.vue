@@ -1,15 +1,9 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, watch, onBeforeUnmount } from 'vue';
+import { youTubeId } from '../youtube.js';
+import { store } from '../store.js';
 
 const props = defineProps({ src: String });
-
-// Pull a YouTube video id out of watch / youtu.be / embed / shorts URLs.
-function youTubeId(url) {
-  const m = url.match(
-    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/i
-  );
-  return m ? m[1] : null;
-}
 
 const ytId = computed(() => youTubeId(props.src || ''));
 
@@ -56,6 +50,25 @@ const ytEmbed = computed(() => {
   if (ytStart.value) url += `&start=${ytStart.value}`;
   return url;
 });
+
+// Whether this media produces sound that would clash with background music.
+// While any such media is on screen, the background player pauses (see
+// BackgroundAudio.vue) and resumes once it's gone. Tracked as a store counter so
+// multiple sound media (e.g. several option videos) pause the music correctly.
+const hasSound = computed(() => ['youtube', 'video', 'audio'].includes(kind.value));
+
+let counted = false;
+function setCounted(on) {
+  if (on === counted) return;
+  counted = on;
+  if (on) store.mediaSoundOn();
+  else store.mediaSoundOff();
+}
+
+// Re-evaluate on src changes too — Vue reuses this component when the question's
+// attachment swaps, so onMounted/onUnmounted alone would miss the transition.
+watch(hasSound, (on) => setCounted(on), { immediate: true });
+onBeforeUnmount(() => setCounted(false));
 </script>
 
 <template>

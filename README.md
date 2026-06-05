@@ -81,6 +81,24 @@ question timer delay by secs
 Rows that fail validation are skipped and reported on the Game Mode screen; they
 don't crash the app.
 
+### Background music
+
+`import/background audio.csv` holds the optional background-music playlist. It has
+just two columns:
+
+```csv
+link,title
+https://www.youtube.com/watch?v=hmKq26RO8n8,Pico Park Theme
+https://www.youtube.com/watch?v=lI_C1Bjdqn4,Animal Crossing Theme
+```
+
+- **link** is a YouTube URL (same formats as question media — `watch`, `youtu.be`,
+  `embed`, `shorts`). **title** is the label shown in the picker.
+- This file is **not** a questions file — it's filtered out of the questions-file
+  dropdown and read separately for the **Background music** picker on the Game Mode
+  screen. Rows with a blank `link` are ignored; if the file is missing, the picker
+  just offers *None*.
+
 ### Answer grading (auto)
 
 For `Multiple Choice` and `True or False`, if `Current Answer` exactly matches one
@@ -102,6 +120,12 @@ manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
   (with a "Select all"). Pick one or more to narrow the pool to questions in those
   categories; questions with no category fall into an `Uncategorized` bucket so they
   stay playable. The question-count field clamps to the size of the filtered pool.
+- **Background music:** a dropdown of the tracks in `import/background audio.csv`
+  (plus *None*). Picking one starts it immediately — looping the single song — and
+  it keeps playing through the whole game, including across screen changes. The
+  choice, volume, and mute state are saved to localStorage. A small control sits in
+  the bottom-right corner of every screen with a **mute toggle** and a **volume
+  slider**.
 - **Number of questions, timer, and the record/subtract checkboxes** work as before.
 
 ## How a game flows
@@ -125,3 +149,8 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
 A **fullscreen toggle** sits in the corner on every screen (great for casting the
 game to a TV). The screen always autoplays video/YouTube media — and masks the
 YouTube title bar — so a paused thumbnail or title can't give the answer away.
+
+**Background music auto-pause:** when a question (or one of its options) has its own
+YouTube/video/audio media on screen, the background music **pauses automatically**
+so the two don't clash, and resumes once that media is gone. The corner control
+shows a ⏸ marker while it's paused for this reason. (Images don't pause the music.)
