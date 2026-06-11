@@ -71,11 +71,17 @@ function loadAudio() {
 // as the defaults for the next game instead of resetting every time.
 const SETTINGS_KEY = 'trivia-settings';
 
+// Play modes. `competition` grades choice answers (correct/wrong) and locks
+// points on a wrong answer; `showcasing` is a host-presentation mode — no option
+// is selected, nothing is graded, the host just reveals each answer.
+const MODES = ['competition', 'showcasing'];
+
 const DEFAULT_SETTINGS = {
   fileName: '',
   numPlayers: 1,
   numQuestions: 1,
   timer: 0,
+  mode: 'competition',
   recordPoints: false,
   recordHints: false,
   hintsSubtract: false,
@@ -90,6 +96,7 @@ function loadSettings() {
       numPlayers: Number.isFinite(obj.numPlayers) ? Math.min(8, Math.max(1, obj.numPlayers)) : 1,
       numQuestions: Number.isFinite(obj.numQuestions) ? Math.max(1, obj.numQuestions) : 1,
       timer: Number.isFinite(obj.timer) ? Math.min(300, Math.max(0, obj.timer)) : 0,
+      mode: MODES.includes(obj.mode) ? obj.mode : 'competition',
       recordPoints: !!obj.recordPoints,
       recordHints: !!obj.recordHints,
       hintsSubtract: !!obj.hintsSubtract,
@@ -163,10 +170,18 @@ export const store = reactive({
   get currentQuestion() {
     return this.questions[this.index] || null;
   },
+  // Competition mode grades answers and tracks who got it right; showcasing mode
+  // is a present-only mode with no selection or grading. Defaults to competition
+  // for older saved settings that predate the mode toggle.
+  get isCompetition() {
+    return this.settings.mode !== 'showcasing';
+  },
   // Whether the current question can be auto-graded. True only when the answer
   // is an exact option match (Multiple Choice) or TRUE/FALSE (True or False) —
   // messy rows whose `Current Answer` holds prose fall back to manual scoring.
+  // Always false in showcasing mode, where nothing is graded.
   get isGradable() {
+    if (!this.isCompetition) return false;
     const q = this.currentQuestion;
     if (!q) return false;
     if (q.type === 'True or False') return ['true', 'false'].includes(norm(q.currentAnswer));
@@ -193,6 +208,9 @@ export const store = reactive({
     return this.hintsTakenThisQuestion - assigned;
   },
   get scoreboardEnabled() {
+    // Showcasing always stops at the Manual Scoreboard so the host can hand out
+    // points for fun; competition stops only when there's something to record.
+    if (!this.isCompetition) return true;
     return this.settings.recordPoints || this.settings.recordHints;
   },
   get totals() {

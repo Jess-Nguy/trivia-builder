@@ -41,6 +41,10 @@ function buildOptions() {
 }
 
 const hasHint = computed(() => !!q.value?.hint);
+// Showcasing mode is present-only: options are shown for context but not chosen,
+// and the action button reveals the answer rather than submitting a guess.
+const selectable = computed(() => store.isCompetition);
+const submitLabel = computed(() => (store.isCompetition ? 'SUBMIT' : 'REVEAL ANSWER'));
 
 function startTimer() {
   clearTimer();
@@ -96,6 +100,7 @@ function resetForQuestion() {
 }
 
 function selectOption(i) {
+  if (!selectable.value) return; // showcasing mode: options aren't chosen
   if (i < displayOptions.value.length) selected.value = i;
 }
 function showHint() {
@@ -163,7 +168,7 @@ const mmss = computed(() => {
           v-for="(opt, i) in displayOptions"
           :key="i"
           class="option"
-          :class="{ selected: selected === i }"
+          :class="{ selected: selected === i, 'not-selectable': !selectable }"
           @click="selectOption(i)"
         >
           <span class="num">{{ i + 1 }}</span>
@@ -177,7 +182,7 @@ const mmss = computed(() => {
       <div class="q-actions">
         <button v-if="hasHint" class="btn btn-orange" @click="showHint">HINT?</button>
         <span v-else></span>
-        <button class="btn btn-green" @click="submit">SUBMIT</button>
+        <button class="btn btn-green" @click="submit">{{ submitLabel }}</button>
       </div>
     </template>
   </div>

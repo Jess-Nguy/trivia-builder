@@ -138,6 +138,9 @@ body {
 }
 .checks label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
 
+.mode-picker { display: flex; gap: 22px; }
+.mode-picker label { display: flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
+
 /* Category filter (Game Mode) */
 .cat-row { align-items: start; }
 .cat-row > label { padding-top: 4px; }
@@ -220,6 +223,9 @@ body {
 }
 .option:hover { background: rgba(255, 255, 255, 0.5); }
 .option.selected { border-color: var(--green); background: rgba(46, 158, 79, 0.12); }
+/* Showcasing mode: options are shown for context, not chosen. */
+.option.not-selectable { cursor: default; }
+.option.not-selectable:hover { background: none; }
 .option .num {
   width: 26px; height: 26px;
   border-radius: 50%;

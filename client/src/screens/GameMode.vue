@@ -32,6 +32,7 @@ const form = reactive({
   fileName: '',
   numQuestions: 1,
   timer: 0,
+  mode: 'competition',
   recordPoints: false,
   recordHints: false,
   hintsSubtract: false,
@@ -121,6 +122,7 @@ onMounted(async () => {
   form.numPlayers = saved.numPlayers;
   form.numQuestions = saved.numQuestions;
   form.timer = saved.timer;
+  form.mode = saved.mode;
   form.recordPoints = saved.recordPoints;
   form.recordHints = saved.recordHints;
   form.hintsSubtract = saved.hintsSubtract;
@@ -199,6 +201,17 @@ function startGame() {
   <div class="panel">
     <div class="brand">Trivia Builder</div>
     <h1 class="title">Game Mode</h1>
+
+    <div class="form-row">
+      <label>
+        Mode
+        <br /><span class="hint-text">(showcasing = present only, no right/wrong)</span>
+      </label>
+      <div class="mode-picker">
+        <label><input type="radio" value="competition" v-model="form.mode" /> Competition</label>
+        <label><input type="radio" value="showcasing" v-model="form.mode" /> Showcasing</label>
+      </div>
+    </div>
 
     <div class="form-row">
       <label>number of teams/users:</label>

@@ -13,15 +13,17 @@ const choiceOptions = computed(() =>
   store.shownOptions.length ? store.shownOptions : q.value?.options || [],
 );
 
-// Correct/wrong banner only shows for auto-gradable questions.
+// Correct/wrong banner only shows for auto-gradable (competition) questions.
 const graded = computed(() => store.isGradable);
 const correct = computed(() => store.isCorrect);
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 function optionState(opt) {
-  if (!graded.value) return '';
-  if (norm(opt.text) === norm(q.value.currentAnswer)) return 'correct';
-  if (store.selectedAnswer && norm(opt.text) === norm(store.selectedAnswer)) return 'chosen-wrong';
+  // Highlight the correct option whenever it can be pinpointed (the answer
+  // exactly matches an option) — in showcasing mode too, so the host can
+  // present it. The chosen-wrong mark needs a graded selection (competition).
+  if (q.value && norm(opt.text) === norm(q.value.currentAnswer)) return 'correct';
+  if (graded.value && store.selectedAnswer && norm(opt.text) === norm(store.selectedAnswer)) return 'chosen-wrong';
   return '';
 }
 
