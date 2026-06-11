@@ -38,20 +38,6 @@ const kind = computed(() => {
   return 'image'; // default — most attachments are images
 });
 
-// Use the privacy-enhanced host + modest branding / no related videos.
-// Note: YouTube has no param that fully removes the title bar, so we also
-// mask it with an overlay strip in the template (see .yt-title-mask).
-//
-// autoplay=1: start playing immediately so the static thumbnail (which can
-// give away the answer) is never shown. Kept unmuted so the audience hears
-// the audio — autoplay-with-sound works because reaching a question is a
-// user click/tap, which satisfies the browser's autoplay gesture policy.
-const ytEmbed = computed(() => {
-  let url = `https://www.youtube-nocookie.com/embed/${ytId.value}?rel=0&modestbranding=1&iv_load_policy=3&autoplay=1`;
-  if (ytStart.value) url += `&start=${ytStart.value}`;
-  return url;
-});
-
 // Whether this media produces sound that would clash with background music.
 // While any such media is on screen, the background player pauses (see
 // BackgroundAudio.vue) and resumes once it's gone. Tracked as a store counter so
@@ -72,12 +58,18 @@ function setCounted(on) {
 // attachment swaps, so onMounted/onUnmounted alone would miss the transition.
 watch(hasSound, (on) => setCounted(on), { immediate: true });
 
-// --- Audio-only YouTube player ---------------------------------------------
-// A YouTube embed is always a video; there's no param to drop the picture. So
-// for #audio links we drive the track with the IFrame API through a hidden
-// player and show our own audio UI — the video surface is never displayed, so a
-// thumbnail can't spoil the answer.
-const ytAudioHost = ref(null);
+// --- IFrame-API YouTube player ----------------------------------------------
+// Both the visible video and #audio-only links are driven through the YouTube
+// IFrame API rather than a plain autoplay embed, so we can force sound on at
+// play time (unMute) — a plain embed can silently land muted (e.g. a stuck
+// YouTube mute toggle, whose control is hidden until you fullscreen the video).
+// The API also gives the #audio path play/pause control behind our own minimal
+// UI, so the video surface (and its answer-spoiling thumbnail) is never shown.
+const ytVideoHost = ref(null); // visible-video host
+const ytAudioHost = ref(null); // hidden audio-only host
+const isYouTubePlayer = computed(
+  () => kind.value === 'youtube' || kind.value === 'youtube-audio'
+);
 let player = null;
 let playerReady = false;
 const playing = ref(false);
@@ -98,7 +90,7 @@ function stopPoll() {
   pollTimer = null;
 }
 
-function destroyAudioPlayer() {
+function destroyPlayer() {
   stopPoll();
   playerReady = false;
   playing.value = false;
@@ -106,24 +98,35 @@ function destroyAudioPlayer() {
   duration.value = 0;
   if (player && player.destroy) player.destroy();
   player = null;
+  if (ytVideoHost.value) ytVideoHost.value.innerHTML = '';
   if (ytAudioHost.value) ytAudioHost.value.innerHTML = '';
 }
 
-async function buildAudioPlayer() {
-  if (kind.value !== 'youtube-audio' || !ytAudioHost.value) return;
+// Pick the host element for the current kind (only one is rendered at a time).
+function currentHost() {
+  return kind.value === 'youtube-audio' ? ytAudioHost.value : ytVideoHost.value;
+}
+
+async function buildPlayer() {
+  if (!isYouTubePlayer.value || !currentHost()) return;
   await loadYouTubeApi();
   // Bail if the attachment changed while the API was loading.
-  if (kind.value !== 'youtube-audio' || !ytAudioHost.value) return;
-  destroyAudioPlayer();
+  if (!isYouTubePlayer.value || !currentHost()) return;
+  destroyPlayer();
 
+  const audioOnly = kind.value === 'youtube-audio';
+  const host = currentHost();
   const el = document.createElement('div');
-  ytAudioHost.value.appendChild(el);
+  host.appendChild(el);
   player = new window.YT.Player(el, {
     videoId: ytId.value,
     host: 'https://www.youtube-nocookie.com',
     playerVars: {
-      autoplay: 1, // reaching a question is a user tap, so audio may autoplay
-      controls: 0,
+      // Reaching a question is a user tap, so playback may autoplay; if the
+      // browser blocks autoplay-with-sound, the native controls (video) or our
+      // play button (audio) still start it unmuted on click.
+      autoplay: 1,
+      controls: audioOnly ? 0 : 1,
       modestbranding: 1,
       playsinline: 1,
       rel: 0,
@@ -134,11 +137,16 @@ async function buildAudioPlayer() {
       onReady: (e) => {
         playerReady = true;
         duration.value = e.target.getDuration() || 0;
+        // Force sound on: the player can otherwise come up muted, and YouTube's
+        // mute control is tucked away (only visible once you fullscreen it).
+        e.target.unMute();
         e.target.playVideo();
       },
       onStateChange: (e) => {
         playing.value = e.data === window.YT.PlayerState.PLAYING;
-        if (playing.value) {
+        // Only the audio-only UI needs the progress poll; the visible video
+        // uses YouTube's own controls and timeline.
+        if (audioOnly && playing.value) {
           duration.value = player.getDuration() || duration.value;
           startPoll();
         } else {
@@ -161,36 +169,32 @@ function fmtTime(s) {
 }
 
 // Build once mounted (the v-if host element exists by then), and rebuild when
-// the attachment swaps to a different audio track. flush:'post' lets the watch
-// run after the DOM updates so a freshly-rendered host element is in place.
-// Keyed on id+start so swapping to a different audio track rebuilds the player.
+// the attachment swaps. flush:'post' lets the watch run after the DOM updates so
+// a freshly-rendered host element is in place. Keyed on kind+id+start so
+// switching between the visible video and the audio-only player, or to a
+// different track, rebuilds the player against the right host.
 watch(
-  () => (kind.value === 'youtube-audio' ? `${ytId.value}|${ytStart.value || 0}` : null),
-  (key) => (key ? buildAudioPlayer() : destroyAudioPlayer()),
+  () => (isYouTubePlayer.value ? `${kind.value}|${ytId.value}|${ytStart.value || 0}` : null),
+  (key) => (key ? buildPlayer() : destroyPlayer()),
   { flush: 'post' }
 );
 
 onMounted(() => {
-  if (kind.value === 'youtube-audio') buildAudioPlayer();
+  if (isYouTubePlayer.value) buildPlayer();
 });
 
 onBeforeUnmount(() => {
   setCounted(false);
-  destroyAudioPlayer();
+  destroyPlayer();
 });
 </script>
 
 <template>
   <div class="media-wrap" v-if="src">
     <div v-if="kind === 'youtube'" class="yt-frame">
-      <iframe
-        class="yt-embed"
-        :src="ytEmbed"
-        title="question media"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-      ></iframe>
+      <!-- Driven by the IFrame API (see buildPlayer) so we can force sound on;
+           the API replaces this host element with the player iframe. -->
+      <div ref="ytVideoHost" class="yt-embed"></div>
       <!-- Masks the YouTube title bar so it can't give away the answer.
            pointer-events: none lets clicks (play/pause) pass through. -->
       <div class="yt-title-mask"></div>

@@ -112,17 +112,27 @@ https://www.youtube.com/watch?v=lI_C1Bjdqn4,Animal Crossing Theme
 
 ### Answer grading (auto)
 
+*(Competition mode only — see **Mode** below. Showcasing mode never grades.)*
+
 For `Multiple Choice` and `True or False`, if `Current Answer` exactly matches one
 of the options (or is `TRUE`/`FALSE`), the app grades the selected answer and
-announces correct/wrong on the Answer Reveal page. A wrong answer with no hint
-taken skips the Manual Scoreboard; a wrong answer where a hint was used shows the
-scoreboard with points locked (hint counter only). Rows whose `Current Answer`
-isn't an exact match (and all open-answer types) aren't graded — they go to the
-manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
-`Explanation`) is what unlocks grading.
+announces correct/wrong on the Answer Reveal page (highlighting the correct option
+and striking the chosen-wrong one). A wrong answer **locks points** on the Manual
+Scoreboard — the board still appears (so any hints can be recorded), but it shows
+"Answer was incorrect — no points to award" and hides the point controls. Rows
+whose `Current Answer` isn't an exact match (and all open-answer types) aren't
+graded — they go to the manual scoreboard as usual. So keeping `Current Answer`
+exact (with prose in `Explanation`) is what unlocks grading.
 
 ## Setting up a game (Game Mode screen)
 
+- **Mode:** **Competition** (default) or **Showcasing**. Competition grades choice
+  answers and tracks who got them right. Showcasing is a host-presentation mode —
+  options are shown for context but **not selectable**, nothing is graded, and the
+  action button reads **REVEAL ANSWER**. It lets you present questions and answers
+  like a proper host without having to know the right answer yourself. (Showcasing
+  still always stops at the Manual Scoreboard so you can hand out points for fun —
+  see *How a game flows*.)
 - **Teams/users:** 1–8. Each slot has an editable name (blank = a default
   `Team/User N`). Names are saved to the browser's localStorage so they survive
   reloads and carry across rounds; two teams can't share a name (case-insensitive).
@@ -131,6 +141,13 @@ manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
   (with a "Select all"). Pick one or more to narrow the pool to questions in those
   categories; questions with no category fall into an `Uncategorized` bucket so they
   stay playable. The question-count field clamps to the size of the filtered pool.
+- **Played-question history:** each question shown is recorded per file (in
+  localStorage) and excluded from future games, so you don't repeat questions across
+  rounds. The screen shows how many of the filtered questions are still unplayed,
+  with a **Clear played history** button to reset that file's pool. A question is
+  identified by its text **plus** its answer and attachment, so media rounds that
+  reuse one prompt (e.g. "what flag is this?" across many flags) are tracked as
+  distinct questions rather than all being marked played at once.
 - **Background music:** a dropdown of the tracks in `import/background audio.csv`
   (plus *None*). Picking one starts it immediately — looping the single song — and
   it keeps playing through the whole game, including across screen changes. The
@@ -138,6 +155,11 @@ manual scoreboard as usual. So keeping `Current Answer` exact (with prose in
   the bottom-right corner of every screen with a **mute toggle** and a **volume
   slider**.
 - **Number of questions, timer, and the record/subtract checkboxes** work as before.
+- **Settings are remembered:** the form's choices — mode, team/question counts,
+  timer, the record/subtract checkboxes, **and the selected file** — are saved to
+  localStorage when you start a game and restored as the defaults next time, so you
+  can re-run a similar round without re-picking everything. (Category selection
+  isn't remembered; reloading a file defaults to "all selected".)
 
 ## How a game flows
 
@@ -149,17 +171,27 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
 - **Timer:** set per-question seconds (0 = none, max 300). At 0 the question
   auto-advances to the answer.
 - **Question screen keys:** `1`–`5` select an option, `H` reveals the hint (when
-  one exists), `Enter` submits.
-- **Manual Scoreboard** appears after each question to award points/hints. It's
-  skipped entirely if neither "record points" nor "record how many hints taken"
-  is enabled. Keyboard: `1`–`8` select a player, `+`/`-` adjust points, `]`/`[`
-  adjust hints, `Enter` = next.
+  one exists), `Enter` submits (or reveals, in showcasing). In showcasing mode the
+  options aren't selectable, so `1`–`5` do nothing.
+- **Answer Reveal** lists choice options in the **same order and numbering** as the
+  Question screen (Multiple Choice options are shuffled per question, so the two
+  pages stay in sync). A `< BACK` button — also `Backspace` or `←` — returns to the
+  question if you advanced by accident; it un-records the reveal so the question
+  stays in the pool, and re-shows any hint already taken. `Enter` goes forward.
+- **Manual Scoreboard** appears after each question to award points/hints.
+  Keyboard: `1`–`8` select a player, `+`/`-` adjust points, `]`/`[` adjust hints,
+  `Enter` = next. In **competition** it's skipped when neither "record points" nor
+  "record how many hints taken" is enabled (or shows with points locked on a wrong
+  graded answer). In **showcasing** it always appears, with point controls active,
+  so you can award points for fun even with both checkboxes off.
 - **Final Scores** tallies points, hints, and total (total subtracts hints when
   "hints subtracts points" is on), names the winner, and `Next` returns to Game Mode.
 
 A **fullscreen toggle** sits in the corner on every screen (great for casting the
 game to a TV). The screen always autoplays video/YouTube media — and masks the
-YouTube title bar — so a paused thumbnail or title can't give the answer away. For
+YouTube title bar — so a paused thumbnail or title can't give the answer away.
+YouTube media plays through the IFrame API and is **forced unmuted on play**, so a
+stuck player-mute (whose control only shows in fullscreen) can't leave it silent. For
 "name this song" questions where even the video would spoil it, tag the YouTube link
 with `#audio` to play it as audio only with the video fully hidden (see
 *Question Attachments* above).

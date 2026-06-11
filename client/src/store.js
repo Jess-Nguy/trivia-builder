@@ -28,9 +28,13 @@ const NAMES_KEY = 'trivia-player-names';
 // CSV has its own independent pool. Cleared only via the Clear button.
 const PLAYED_KEY = 'trivia-played-questions';
 
-// A stable per-question identity within a file. Uses the normalized question
-// text rather than the row index so it survives the CSV being edited/reordered.
-const questionKey = (q) => norm(q?.question);
+// A stable per-question identity within a file. Combines the normalized question
+// text, answer, and attachment rather than the row index so it survives the CSV
+// being edited/reordered. Text alone is NOT unique — media rounds reuse the same
+// prompt ("what flag is this?", "name this meme.") across many rows, so keying on
+// text alone marked every sibling played at once and overcounted the pool.
+const questionKey = (q) =>
+  [norm(q?.question), norm(q?.currentAnswer), norm(q?.attachment)].join(' :: ');
 
 function loadPlayed() {
   try {
@@ -62,6 +66,46 @@ function loadAudio() {
   }
 }
 
+// localStorage key for the Game Mode form settings, so the host's last choices
+// (file, team count, question count, timer, points/hints toggles) are restored
+// as the defaults for the next game instead of resetting every time.
+const SETTINGS_KEY = 'trivia-settings';
+
+// Play modes. `competition` grades choice answers (correct/wrong) and locks
+// points on a wrong answer; `showcasing` is a host-presentation mode — no option
+// is selected, nothing is graded, the host just reveals each answer.
+const MODES = ['competition', 'showcasing'];
+
+const DEFAULT_SETTINGS = {
+  fileName: '',
+  numPlayers: 1,
+  numQuestions: 1,
+  timer: 0,
+  mode: 'competition',
+  recordPoints: false,
+  recordHints: false,
+  hintsSubtract: false,
+};
+
+function loadSettings() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    if (!obj || typeof obj !== 'object') return { ...DEFAULT_SETTINGS };
+    return {
+      fileName: String(obj.fileName ?? ''),
+      numPlayers: Number.isFinite(obj.numPlayers) ? Math.min(8, Math.max(1, obj.numPlayers)) : 1,
+      numQuestions: Number.isFinite(obj.numQuestions) ? Math.max(1, obj.numQuestions) : 1,
+      timer: Number.isFinite(obj.timer) ? Math.min(300, Math.max(0, obj.timer)) : 0,
+      mode: MODES.includes(obj.mode) ? obj.mode : 'competition',
+      recordPoints: !!obj.recordPoints,
+      recordHints: !!obj.recordHints,
+      hintsSubtract: !!obj.hintsSubtract,
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
 // The default numbered name shown when a player's custom name is blank.
 const defaultName = (i) => `Team/User ${i + 1}`;
 
@@ -77,15 +121,9 @@ function loadNames() {
 export const store = reactive({
   screen: 'gameMode', // gameMode | question | answer | scoreboard | final
 
-  settings: {
-    fileName: '',
-    numPlayers: 1,
-    numQuestions: 1,
-    timer: 0,
-    recordPoints: false,
-    recordHints: false,
-    hintsSubtract: false,
-  },
+  // Game Mode settings. Seeded from localStorage so the previous game's choices
+  // become the defaults for the next one (see loadSettings / persistSettings).
+  settings: loadSettings(),
 
   players: [],
 
@@ -119,6 +157,9 @@ export const store = reactive({
   index: 0,
   hintsTakenThisQuestion: 0,
   selectedAnswer: null, // text of the option chosen this question (null if none)
+  // The options in the exact order shown on the Question screen (Multiple Choice
+  // is shuffled), so the Answer Reveal can list them in the same order/numbering.
+  shownOptions: [],
 
   // Per-question working totals (reset every question) so we can cap how much
   // can be awarded this question. playerId -> amount awarded this question.
@@ -129,10 +170,18 @@ export const store = reactive({
   get currentQuestion() {
     return this.questions[this.index] || null;
   },
+  // Competition mode grades answers and tracks who got it right; showcasing mode
+  // is a present-only mode with no selection or grading. Defaults to competition
+  // for older saved settings that predate the mode toggle.
+  get isCompetition() {
+    return this.settings.mode !== 'showcasing';
+  },
   // Whether the current question can be auto-graded. True only when the answer
   // is an exact option match (Multiple Choice) or TRUE/FALSE (True or False) —
   // messy rows whose `Current Answer` holds prose fall back to manual scoring.
+  // Always false in showcasing mode, where nothing is graded.
   get isGradable() {
+    if (!this.isCompetition) return false;
     const q = this.currentQuestion;
     if (!q) return false;
     if (q.type === 'True or False') return ['true', 'false'].includes(norm(q.currentAnswer));
@@ -158,19 +207,11 @@ export const store = reactive({
     const assigned = Object.values(this.qHints).reduce((a, b) => a + b, 0);
     return this.hintsTakenThisQuestion - assigned;
   },
-  // Can points be awarded this question? Off when not recording points, or when
-  // a gradable question was answered wrong. Open-answer types stay awardable
-  // (the host judges them).
-  get pointsAwardable() {
-    return this.settings.recordPoints && !this.pointsLocked;
-  },
-  // Is there a hint to record this question?
-  get hintsRecordable() {
-    return this.settings.recordHints && this.hintsTakenThisQuestion > 0;
-  },
-  // Show the Manual Scoreboard only when there's something actionable on it.
-  get shouldShowScoreboard() {
-    return this.pointsAwardable || this.hintsRecordable;
+  get scoreboardEnabled() {
+    // Showcasing always stops at the Manual Scoreboard so the host can hand out
+    // points for fun; competition stops only when there's something to record.
+    if (!this.isCompetition) return true;
+    return this.settings.recordPoints || this.settings.recordHints;
   },
   get totals() {
     return this.players.map((p) => ({
@@ -245,6 +286,14 @@ export const store = reactive({
     }
   },
 
+  persistSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+    } catch {
+      /* storage unavailable — game settings just won't persist this session */
+    }
+  },
+
   // A sound-producing question media appeared / went away. The background player
   // watches mediaSoundCount and pauses while it's above zero.
   mediaSoundOn() {
@@ -284,6 +333,20 @@ export const store = reactive({
     }
   },
 
+  // Remove a question from a file's played history and persist. Used when the
+  // host steps back from the Answer Reveal to the question, so an accidental
+  // reveal doesn't permanently consume the question from the pool.
+  unmarkPlayed(fileName, question) {
+    if (!fileName || !question) return;
+    const list = this.playedByFile[fileName];
+    if (!list) return;
+    const i = list.indexOf(questionKey(question));
+    if (i !== -1) {
+      list.splice(i, 1);
+      this.persistPlayed();
+    }
+  },
+
   // Wipe the played history for a single file and persist.
   clearPlayed(fileName) {
     if (this.playedByFile[fileName]) {
@@ -294,6 +357,8 @@ export const store = reactive({
 
   startGame(settings, allQuestions) {
     this.settings = { ...settings };
+    // Remember these choices as the defaults for the next game.
+    this.persistSettings();
     this.players = Array.from({ length: settings.numPlayers }, (_, i) => ({
       id: i,
       name: this.effectiveName(i),
@@ -314,6 +379,7 @@ export const store = reactive({
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;
+    this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
     this.screen = 'question';
@@ -321,6 +387,12 @@ export const store = reactive({
 
   takeHint() {
     this.hintsTakenThisQuestion += 1;
+  },
+
+  // Record the option order as shown on the Question screen, so the Answer
+  // Reveal can mirror it (Multiple Choice options are shuffled per question).
+  setShownOptions(options) {
+    this.shownOptions = options;
   },
 
   submitQuestion(selectedAnswer = null) {
@@ -331,11 +403,18 @@ export const store = reactive({
     this.screen = 'answer';
   },
 
+  // Step back from the Answer Reveal to the question — e.g. the host pressed
+  // Enter by accident. Un-records the reveal so the question stays in the pool;
+  // it's re-recorded if the host submits again.
+  backToQuestion() {
+    this.unmarkPlayed(this.settings.fileName, this.currentQuestion);
+    this.selectedAnswer = null;
+    this.screen = 'question';
+  },
+
   // From the Answer Reveal screen: go to scoreboard, or skip to next question.
-  // The scoreboard is skipped when there's nothing to do — e.g. a wrong gradable
-  // answer with no hint taken (no points to give, no hints to record).
   afterAnswer() {
-    if (this.shouldShowScoreboard) {
+    if (this.scoreboardEnabled) {
       this.screen = 'scoreboard';
     } else {
       this.nextQuestion();
@@ -372,6 +451,7 @@ export const store = reactive({
       this.index += 1;
       this.hintsTakenThisQuestion = 0;
       this.selectedAnswer = null;
+      this.shownOptions = [];
       this.qPoints = {};
       this.qHints = {};
       this.screen = 'question';
@@ -387,6 +467,7 @@ export const store = reactive({
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;
+    this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
     this.screen = 'gameMode';

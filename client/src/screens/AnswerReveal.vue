@@ -7,25 +7,40 @@ import EndGameButton from '../components/EndGameButton.vue';
 const q = computed(() => store.currentQuestion);
 const isChoice = computed(() => q.value && (q.value.type === 'Multiple Choice' || q.value.type === 'True or False'));
 // Each option is an { text, attachment } object (TRUE/FALSE included for T/F).
-const choiceOptions = computed(() => q.value?.options || []);
+// Use the order shown on the Question screen (Multiple Choice is shuffled) so the
+// numbering matches; fall back to the question's own order if none was recorded.
+const choiceOptions = computed(() =>
+  store.shownOptions.length ? store.shownOptions : q.value?.options || [],
+);
 
-// Correct/wrong banner only shows for auto-gradable questions.
+// Correct/wrong banner only shows for auto-gradable (competition) questions.
 const graded = computed(() => store.isGradable);
 const correct = computed(() => store.isCorrect);
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
 function optionState(opt) {
-  if (!graded.value) return '';
-  if (norm(opt.text) === norm(q.value.currentAnswer)) return 'correct';
-  if (store.selectedAnswer && norm(opt.text) === norm(store.selectedAnswer)) return 'chosen-wrong';
+  // Highlight the correct option whenever it can be pinpointed (the answer
+  // exactly matches an option) — in showcasing mode too, so the host can
+  // present it. The chosen-wrong mark needs a graded selection (competition).
+  if (q.value && norm(opt.text) === norm(q.value.currentAnswer)) return 'correct';
+  if (graded.value && store.selectedAnswer && norm(opt.text) === norm(store.selectedAnswer)) return 'chosen-wrong';
   return '';
 }
 
 function next() {
   store.afterAnswer();
 }
+// Step back to the question (e.g. Enter was pressed by accident).
+function back() {
+  store.backToQuestion();
+}
 function onKey(e) {
   if (e.key === 'Enter') next();
+  // Backspace or ArrowLeft go back to the question.
+  if (e.key === 'Backspace' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    back();
+  }
 }
 onMounted(() => window.addEventListener('keydown', onKey));
 onUnmounted(() => window.removeEventListener('keydown', onKey));
@@ -35,6 +50,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel answer" v-if="q">
     <EndGameButton />
     <div class="brand">Trivia Builder</div>
+    <button class="btn back-btn" @click="back">&lt; BACK</button>
     <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
 
     <div class="category">Category: {{ q.categories.join(', ') || '—' }}</div>

@@ -5,8 +5,10 @@ import EndGameButton from '../components/EndGameButton.vue';
 
 const q = computed(() => store.currentQuestion);
 const pointValue = computed(() => q.value?.points ?? 0);
-// Points controls hide when a gradable question was answered wrong.
-const showPoints = computed(() => store.settings.recordPoints && !store.pointsLocked);
+// Points controls show when recording points (or always in showcasing mode, so
+// the host can award points for fun), and hide when a gradable question was
+// answered wrong.
+const showPoints = computed(() => (store.settings.recordPoints || !store.isCompetition) && !store.pointsLocked);
 const showHints = computed(() => store.settings.recordHints);
 
 const activeIdx = ref(0);

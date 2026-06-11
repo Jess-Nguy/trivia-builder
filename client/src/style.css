@@ -98,6 +98,18 @@ body {
   right: 36px;
 }
 
+/* Secondary "go back to the question" button, sits left of NEXT on the
+   Answer Reveal (for an accidental Enter that revealed the answer early). */
+.back-btn {
+  position: absolute;
+  top: 22px;
+  right: 132px;
+  background: #fff;
+  color: var(--muted);
+  border: 1.5px solid #c9d6d4;
+}
+.back-btn:hover { color: var(--text); border-color: #9bb0ad; }
+
 /* Form */
 .form-row {
   display: grid;
@@ -125,6 +137,9 @@ body {
   margin: 18px 0;
 }
 .checks label { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+
+.mode-picker { display: flex; gap: 22px; }
+.mode-picker label { display: flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
 
 /* Category filter (Game Mode) */
 .cat-row { align-items: start; }
@@ -208,6 +223,9 @@ body {
 }
 .option:hover { background: rgba(255, 255, 255, 0.5); }
 .option.selected { border-color: var(--green); background: rgba(46, 158, 79, 0.12); }
+/* Showcasing mode: options are shown for context, not chosen. */
+.option.not-selectable { cursor: default; }
+.option.not-selectable:hover { background: none; }
 .option .num {
   width: 26px; height: 26px;
   border-radius: 50%;
@@ -361,7 +379,8 @@ kbd {
 
 .media-wrap { text-align: center; margin: 16px 0; }
 .media-wrap img, .media-wrap video { max-width: 100%; max-height: 360px; border-radius: 12px; }
-.media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; }
+.media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; overflow: hidden; }
+.media-wrap .yt-embed iframe { width: 100%; height: 100%; border: 0; display: block; }
 
 /* YouTube embeds always render a title bar at the top that can spoil the answer.
    Wrap the iframe and cover that strip with an opaque mask. */
