@@ -146,6 +146,9 @@ export const store = reactive({
   index: 0,
   hintsTakenThisQuestion: 0,
   selectedAnswer: null, // text of the option chosen this question (null if none)
+  // The options in the exact order shown on the Question screen (Multiple Choice
+  // is shuffled), so the Answer Reveal can list them in the same order/numbering.
+  shownOptions: [],
 
   // Per-question working totals (reset every question) so we can cap how much
   // can be awarded this question. playerId -> amount awarded this question.
@@ -340,6 +343,7 @@ export const store = reactive({
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;
+    this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
     this.screen = 'question';
@@ -347,6 +351,12 @@ export const store = reactive({
 
   takeHint() {
     this.hintsTakenThisQuestion += 1;
+  },
+
+  // Record the option order as shown on the Question screen, so the Answer
+  // Reveal can mirror it (Multiple Choice options are shuffled per question).
+  setShownOptions(options) {
+    this.shownOptions = options;
   },
 
   submitQuestion(selectedAnswer = null) {
@@ -396,6 +406,7 @@ export const store = reactive({
       this.index += 1;
       this.hintsTakenThisQuestion = 0;
       this.selectedAnswer = null;
+      this.shownOptions = [];
       this.qPoints = {};
       this.qHints = {};
       this.screen = 'question';
@@ -411,6 +422,7 @@ export const store = reactive({
     this.index = 0;
     this.hintsTakenThisQuestion = 0;
     this.selectedAnswer = null;
+    this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
     this.screen = 'gameMode';

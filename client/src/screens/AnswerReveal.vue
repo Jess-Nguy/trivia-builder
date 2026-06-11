@@ -7,7 +7,11 @@ import EndGameButton from '../components/EndGameButton.vue';
 const q = computed(() => store.currentQuestion);
 const isChoice = computed(() => q.value && (q.value.type === 'Multiple Choice' || q.value.type === 'True or False'));
 // Each option is an { text, attachment } object (TRUE/FALSE included for T/F).
-const choiceOptions = computed(() => q.value?.options || []);
+// Use the order shown on the Question screen (Multiple Choice is shuffled) so the
+// numbering matches; fall back to the question's own order if none was recorded.
+const choiceOptions = computed(() =>
+  store.shownOptions.length ? store.shownOptions : q.value?.options || [],
+);
 
 // Correct/wrong banner only shows for auto-gradable questions.
 const graded = computed(() => store.isGradable);

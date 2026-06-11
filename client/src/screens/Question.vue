@@ -36,6 +36,8 @@ function buildOptions() {
   if (cur.type === 'True or False') displayOptions.value = cur.options; // fixed TRUE/FALSE order
   else if (cur.type === 'Multiple Choice') displayOptions.value = shuffle(cur.options);
   else displayOptions.value = []; // Single Choice has no clickable options
+  // Publish the exact order shown so the Answer Reveal lists options identically.
+  store.setShownOptions(displayOptions.value);
 }
 
 const hasHint = computed(() => !!q.value?.hint);
