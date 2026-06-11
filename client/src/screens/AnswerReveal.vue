@@ -28,8 +28,17 @@ function optionState(opt) {
 function next() {
   store.afterAnswer();
 }
+// Step back to the question (e.g. Enter was pressed by accident).
+function back() {
+  store.backToQuestion();
+}
 function onKey(e) {
   if (e.key === 'Enter') next();
+  // Backspace or ArrowLeft go back to the question.
+  if (e.key === 'Backspace' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    back();
+  }
 }
 onMounted(() => window.addEventListener('keydown', onKey));
 onUnmounted(() => window.removeEventListener('keydown', onKey));
@@ -39,6 +48,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel answer" v-if="q">
     <EndGameButton />
     <div class="brand">Trivia Builder</div>
+    <button class="btn back-btn" @click="back">&lt; BACK</button>
     <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
 
     <div class="category">Category: {{ q.categories.join(', ') || '—' }}</div>

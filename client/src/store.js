@@ -315,6 +315,20 @@ export const store = reactive({
     }
   },
 
+  // Remove a question from a file's played history and persist. Used when the
+  // host steps back from the Answer Reveal to the question, so an accidental
+  // reveal doesn't permanently consume the question from the pool.
+  unmarkPlayed(fileName, question) {
+    if (!fileName || !question) return;
+    const list = this.playedByFile[fileName];
+    if (!list) return;
+    const i = list.indexOf(questionKey(question));
+    if (i !== -1) {
+      list.splice(i, 1);
+      this.persistPlayed();
+    }
+  },
+
   // Wipe the played history for a single file and persist.
   clearPlayed(fileName) {
     if (this.playedByFile[fileName]) {
@@ -369,6 +383,15 @@ export const store = reactive({
     // played so it won't be served in future games.
     this.markPlayed(this.settings.fileName, this.currentQuestion);
     this.screen = 'answer';
+  },
+
+  // Step back from the Answer Reveal to the question — e.g. the host pressed
+  // Enter by accident. Un-records the reveal so the question stays in the pool;
+  // it's re-recorded if the host submits again.
+  backToQuestion() {
+    this.unmarkPlayed(this.settings.fileName, this.currentQuestion);
+    this.selectedAnswer = null;
+    this.screen = 'question';
   },
 
   // From the Answer Reveal screen: go to scoreboard, or skip to next question.

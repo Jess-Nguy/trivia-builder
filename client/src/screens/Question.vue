@@ -87,7 +87,9 @@ function skipDelay() {
 
 function resetForQuestion() {
   selected.value = null;
-  hintShown.value = false;
+  // Reflect any hint already taken for this question, so stepping back from the
+  // Answer Reveal re-shows the hint instead of letting it be counted twice.
+  hintShown.value = store.hintsTakenThisQuestion > 0;
   buildOptions();
   if (q.value?.delaySecs > 0) startReading();
   else beginAnswering();

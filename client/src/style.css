@@ -98,6 +98,18 @@ body {
   right: 36px;
 }
 
+/* Secondary "go back to the question" button, sits left of NEXT on the
+   Answer Reveal (for an accidental Enter that revealed the answer early). */
+.back-btn {
+  position: absolute;
+  top: 22px;
+  right: 132px;
+  background: #fff;
+  color: var(--muted);
+  border: 1.5px solid #c9d6d4;
+}
+.back-btn:hover { color: var(--text); border-color: #9bb0ad; }
+
 /* Form */
 .form-row {
   display: grid;
