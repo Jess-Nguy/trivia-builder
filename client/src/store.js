@@ -62,6 +62,39 @@ function loadAudio() {
   }
 }
 
+// localStorage key for the Game Mode form settings, so the host's last choices
+// (file, team count, question count, timer, points/hints toggles) are restored
+// as the defaults for the next game instead of resetting every time.
+const SETTINGS_KEY = 'trivia-settings';
+
+const DEFAULT_SETTINGS = {
+  fileName: '',
+  numPlayers: 1,
+  numQuestions: 1,
+  timer: 0,
+  recordPoints: false,
+  recordHints: false,
+  hintsSubtract: false,
+};
+
+function loadSettings() {
+  try {
+    const obj = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    if (!obj || typeof obj !== 'object') return { ...DEFAULT_SETTINGS };
+    return {
+      fileName: String(obj.fileName ?? ''),
+      numPlayers: Number.isFinite(obj.numPlayers) ? Math.min(8, Math.max(1, obj.numPlayers)) : 1,
+      numQuestions: Number.isFinite(obj.numQuestions) ? Math.max(1, obj.numQuestions) : 1,
+      timer: Number.isFinite(obj.timer) ? Math.min(300, Math.max(0, obj.timer)) : 0,
+      recordPoints: !!obj.recordPoints,
+      recordHints: !!obj.recordHints,
+      hintsSubtract: !!obj.hintsSubtract,
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
 // The default numbered name shown when a player's custom name is blank.
 const defaultName = (i) => `Team/User ${i + 1}`;
 
@@ -77,15 +110,9 @@ function loadNames() {
 export const store = reactive({
   screen: 'gameMode', // gameMode | question | answer | scoreboard | final
 
-  settings: {
-    fileName: '',
-    numPlayers: 1,
-    numQuestions: 1,
-    timer: 0,
-    recordPoints: false,
-    recordHints: false,
-    hintsSubtract: false,
-  },
+  // Game Mode settings. Seeded from localStorage so the previous game's choices
+  // become the defaults for the next one (see loadSettings / persistSettings).
+  settings: loadSettings(),
 
   players: [],
 
@@ -158,19 +185,8 @@ export const store = reactive({
     const assigned = Object.values(this.qHints).reduce((a, b) => a + b, 0);
     return this.hintsTakenThisQuestion - assigned;
   },
-  // Can points be awarded this question? Off when not recording points, or when
-  // a gradable question was answered wrong. Open-answer types stay awardable
-  // (the host judges them).
-  get pointsAwardable() {
-    return this.settings.recordPoints && !this.pointsLocked;
-  },
-  // Is there a hint to record this question?
-  get hintsRecordable() {
-    return this.settings.recordHints && this.hintsTakenThisQuestion > 0;
-  },
-  // Show the Manual Scoreboard only when there's something actionable on it.
-  get shouldShowScoreboard() {
-    return this.pointsAwardable || this.hintsRecordable;
+  get scoreboardEnabled() {
+    return this.settings.recordPoints || this.settings.recordHints;
   },
   get totals() {
     return this.players.map((p) => ({
@@ -245,6 +261,14 @@ export const store = reactive({
     }
   },
 
+  persistSettings() {
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+    } catch {
+      /* storage unavailable — game settings just won't persist this session */
+    }
+  },
+
   // A sound-producing question media appeared / went away. The background player
   // watches mediaSoundCount and pauses while it's above zero.
   mediaSoundOn() {
@@ -294,6 +318,8 @@ export const store = reactive({
 
   startGame(settings, allQuestions) {
     this.settings = { ...settings };
+    // Remember these choices as the defaults for the next game.
+    this.persistSettings();
     this.players = Array.from({ length: settings.numPlayers }, (_, i) => ({
       id: i,
       name: this.effectiveName(i),
@@ -332,10 +358,8 @@ export const store = reactive({
   },
 
   // From the Answer Reveal screen: go to scoreboard, or skip to next question.
-  // The scoreboard is skipped when there's nothing to do — e.g. a wrong gradable
-  // answer with no hint taken (no points to give, no hints to record).
   afterAnswer() {
-    if (this.shouldShowScoreboard) {
+    if (this.scoreboardEnabled) {
       this.screen = 'scoreboard';
     } else {
       this.nextQuestion();

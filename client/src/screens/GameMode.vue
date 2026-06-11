@@ -115,6 +115,16 @@ watch(maxQuestions, (max) => {
 });
 
 onMounted(async () => {
+  // Seed the form from the previous game's saved settings, so the host's last
+  // choices (team/question counts, timer, points/hints toggles) are the defaults.
+  const saved = store.settings;
+  form.numPlayers = saved.numPlayers;
+  form.numQuestions = saved.numQuestions;
+  form.timer = saved.timer;
+  form.recordPoints = saved.recordPoints;
+  form.recordHints = saved.recordHints;
+  form.hintsSubtract = saved.hintsSubtract;
+
   // Restore the team count to cover any names saved from a previous session, so
   // reload-persisted names stay visible instead of being trimmed away. Only an
   // explicit lowering of the count discards names.
@@ -126,6 +136,12 @@ onMounted(async () => {
     files.value = await fetchFiles();
   } catch (e) {
     error.value = e.message;
+  }
+  // Re-select the previously played file (if it still exists) and load its
+  // questions, so the host can start the next round without re-picking.
+  if (saved.fileName && files.value.includes(saved.fileName)) {
+    form.fileName = saved.fileName;
+    await onFileChange();
   }
   // Background-music options load independently — a failure here just leaves the
   // picker at "None" and never blocks question setup.
