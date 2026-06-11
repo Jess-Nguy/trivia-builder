@@ -361,7 +361,8 @@ kbd {
 
 .media-wrap { text-align: center; margin: 16px 0; }
 .media-wrap img, .media-wrap video { max-width: 100%; max-height: 360px; border-radius: 12px; }
-.media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; }
+.media-wrap .yt-embed { width: 640px; max-width: 100%; aspect-ratio: 16 / 9; height: auto; border-radius: 12px; overflow: hidden; }
+.media-wrap .yt-embed iframe { width: 100%; height: 100%; border: 0; display: block; }
 
 /* YouTube embeds always render a title bar at the top that can spoil the answer.
    Wrap the iframe and cover that strip with an opaque mask. */

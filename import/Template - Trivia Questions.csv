@@ -5,4 +5,5 @@ True or False example — options are hardcoded; just set Current Answer to TRUE
 Question media example — any type can carry an image/video/audio/YouTube URL.,,,,,,the answer,Media,Single Choice,https://example.com/image-or-video-or-audio-or-youtube-url,1,,,,,,,,
 Per-option media example — attach a URL to any option (text optional; image-only options work).,option with text + image,another option,,,,option with text + image,Media,Multiple Choice,,2,,https://example.com/option-1-image-url,https://example.com/option-2-image-url,,,,,
 Reading-delay example — show the question for N seconds (options hidden) before answering. Space skips.,,,,,,the answer,Category A,Single Choice,,1,,,,,,,,10
-"Points backfill — leave Points blank and it defaults (hint present → 2, none → 1) and is saved back.",,,,,,the answer,Category A,Single Choice,,,"a hint, so this row backfills to 2 points",,,,,,,
+"Points backfill — leave Points blank and it defaults (hint present → 2, none → 1) and is saved back.",,,,,,the answer,Category A,Single Choice,,2,"a hint, so this row backfills to 2 points",,,,,,,"
+"

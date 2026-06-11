@@ -159,7 +159,9 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
 
 A **fullscreen toggle** sits in the corner on every screen (great for casting the
 game to a TV). The screen always autoplays video/YouTube media — and masks the
-YouTube title bar — so a paused thumbnail or title can't give the answer away. For
+YouTube title bar — so a paused thumbnail or title can't give the answer away.
+YouTube media plays through the IFrame API and is **forced unmuted on play**, so a
+stuck player-mute (whose control only shows in fullscreen) can't leave it silent. For
 "name this song" questions where even the video would spoil it, tag the YouTube link
 with `#audio` to play it as audio only with the video fully hidden (see
 *Question Attachments* above).
