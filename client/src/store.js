@@ -28,9 +28,13 @@ const NAMES_KEY = 'trivia-player-names';
 // CSV has its own independent pool. Cleared only via the Clear button.
 const PLAYED_KEY = 'trivia-played-questions';
 
-// A stable per-question identity within a file. Uses the normalized question
-// text rather than the row index so it survives the CSV being edited/reordered.
-const questionKey = (q) => norm(q?.question);
+// A stable per-question identity within a file. Combines the normalized question
+// text, answer, and attachment rather than the row index so it survives the CSV
+// being edited/reordered. Text alone is NOT unique — media rounds reuse the same
+// prompt ("what flag is this?", "name this meme.") across many rows, so keying on
+// text alone marked every sibling played at once and overcounted the pool.
+const questionKey = (q) =>
+  [norm(q?.question), norm(q?.currentAnswer), norm(q?.attachment)].join(' :: ');
 
 function loadPlayed() {
   try {
