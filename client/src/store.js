@@ -85,6 +85,9 @@ const DEFAULT_SETTINGS = {
   recordPoints: false,
   recordHints: false,
   hintsSubtract: false,
+  // The category names selected for the last game, so the filter is restored
+  // when reopening the same file. Empty means "no saved selection" (play all).
+  categories: [],
 };
 
 function loadSettings() {
@@ -100,6 +103,7 @@ function loadSettings() {
       recordPoints: !!obj.recordPoints,
       recordHints: !!obj.recordHints,
       hintsSubtract: !!obj.hintsSubtract,
+      categories: Array.isArray(obj.categories) ? obj.categories.map((c) => String(c)) : [],
     };
   } catch {
     return { ...DEFAULT_SETTINGS };

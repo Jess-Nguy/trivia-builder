@@ -156,10 +156,12 @@ exact (with prose in `Explanation`) is what unlocks grading.
   slider**.
 - **Number of questions, timer, and the record/subtract checkboxes** work as before.
 - **Settings are remembered:** the form's choices — mode, team/question counts,
-  timer, the record/subtract checkboxes, **and the selected file** — are saved to
-  localStorage when you start a game and restored as the defaults next time, so you
-  can re-run a similar round without re-picking everything. (Category selection
-  isn't remembered; reloading a file defaults to "all selected".)
+  timer, the record/subtract checkboxes, **the selected file, and the category
+  selection** — are saved to localStorage when you start a game and restored as the
+  defaults next time, so you can re-run a similar round without re-picking
+  everything. (The saved categories are restored only when the previous file
+  reopens, limited to categories that still exist; switching to another file
+  defaults to "all selected".)
 
 ## How a game flows
 
