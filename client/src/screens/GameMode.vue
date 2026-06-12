@@ -143,14 +143,14 @@ onMounted(async () => {
   // questions, so the host can start the next round without re-picking.
   if (saved.fileName && files.value.includes(saved.fileName)) {
     form.fileName = saved.fileName;
-    await onFileChange();
+    await onFileChange(true);
   }
   // Background-music options load independently — a failure here just leaves the
   // picker at "None" and never blocks question setup.
   audioTracks.value = await fetchBackgroundAudio();
 });
 
-async function onFileChange() {
+async function onFileChange(restore = false) {
   error.value = '';
   loaded.value = null;
   selectedCategories.value = [];
@@ -159,7 +159,13 @@ async function onFileChange() {
   try {
     const data = await fetchQuestions(form.fileName);
     loaded.value = data;
-    selectedCategories.value = [...categories.value]; // start with everything selected
+    // When reopening the previous game's file, restore its saved category
+    // selection (limited to categories that still exist); otherwise — or if none
+    // of the saved categories survive — start with everything selected.
+    const restored = restore
+      ? store.settings.categories.filter((c) => categories.value.includes(c))
+      : [];
+    selectedCategories.value = restored.length ? restored : [...categories.value];
     form.numQuestions = Math.min(form.numQuestions || 1, data.total) || 1;
     if (data.total === 0) {
       error.value = 'This file has no valid questions.';
@@ -193,7 +199,7 @@ function startGame() {
   clampPlayers();
   clampQuestions();
   clampTimer();
-  store.startGame({ ...form }, filteredQuestions.value);
+  store.startGame({ ...form, categories: [...selectedCategories.value] }, filteredQuestions.value);
 }
 </script>
 
@@ -240,7 +246,7 @@ function startGame() {
 
     <div class="form-row">
       <label>select questions file:</label>
-      <select v-model="form.fileName" @change="onFileChange">
+      <select v-model="form.fileName" @change="onFileChange()">
         <option value="" disabled>— choose a file from /import —</option>
         <option v-for="f in files" :key="f" :value="f">{{ f }}</option>
       </select>
