@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
         <div class="yt-audio-bar">
           <div
             class="yt-audio-fill"
-            :style="{ width: duration ? (elapsed / duration) * 100 + '%' : '0%' }"
+            :style="{ transform: `scaleX(${duration ? elapsed / duration : 0})` }"
           ></div>
         </div>
       </div>

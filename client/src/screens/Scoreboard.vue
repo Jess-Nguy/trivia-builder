@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
 import EndGameButton from '../components/EndGameButton.vue';
+import GameProgress from '../components/GameProgress.vue';
 
 const q = computed(() => store.currentQuestion);
 const pointValue = computed(() => q.value?.points ?? 0);
@@ -12,6 +13,12 @@ const showPoints = computed(() => (store.settings.recordPoints || !store.isCompe
 const showHints = computed(() => store.settings.recordHints);
 
 const activeIdx = ref(0);
+
+// Who's ahead right now (by running total), so the room can see it at a glance.
+const leaderIds = computed(() => {
+  const top = Math.max(...store.totals.map((t) => t.total));
+  return top > 0 ? new Set(store.totals.filter((t) => t.total === top).map((t) => t.id)) : new Set();
+});
 
 function addPoints(player, dir) {
   store.awardPoints(player.id, dir * pointValue.value);
@@ -46,8 +53,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 <template>
   <div class="panel">
     <EndGameButton />
-    <div class="brand">Trivia Builder</div>
-    <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
+    <div class="top-row">
+      <div class="brand">Trivia Builder</div>
+      <GameProgress />
+      <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
+    </div>
     <h1 class="title">Manual Scoreboard</h1>
 
     <p v-if="showPoints" class="award-line">Award points: {{ pointValue }} for the question</p>
@@ -64,17 +74,18 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         :class="{ active: activeIdx === i }"
         @click="activeIdx = i"
       >
-        <div class="avatar" :style="{ background: p.color }">👤</div>
+        <div class="avatar" :style="{ background: p.color }">{{ i + 1 }}</div>
+        <div v-if="leaderIds.has(p.id)" class="leader-tag">👑 Leading</div>
         <div class="player-name">{{ p.name }}</div>
 
         <div v-if="showPoints" class="counter">
           <button @click.stop="addPoints(p, -1)" :disabled="(store.qPoints[p.id] || 0) <= 0">−</button>
-          <span class="val">{{ p.points }} pts</span>
+          <span class="val" :key="p.points">{{ p.points }} pts</span>
           <button @click.stop="addPoints(p, 1)" :disabled="(store.qPoints[p.id] || 0) >= pointValue">+</button>
         </div>
         <div v-if="showHints" class="counter">
           <button @click.stop="addHints(p, -1)" :disabled="(store.qHints[p.id] || 0) <= 0">−</button>
-          <span class="val">{{ p.hints }} hint</span>
+          <span class="val" :key="p.hints">{{ p.hints }} hint</span>
           <button @click.stop="addHints(p, 1)" :disabled="store.hintsRemaining <= 0">+</button>
         </div>
       </div>

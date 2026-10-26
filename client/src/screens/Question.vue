@@ -3,6 +3,9 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
+import GameProgress from '../components/GameProgress.vue';
+
+const LETTERS = 'ABCDE';
 
 const q = computed(() => store.currentQuestion);
 const selected = ref(null);
@@ -126,8 +129,11 @@ function onKey(e) {
   }
   if (e.key === 'Enter') return submit();
   if (e.key.toLowerCase() === 'h' && hasHint.value) return showHint();
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   const n = parseInt(e.key, 10);
-  if (!Number.isNaN(n) && n >= 1) selectOption(n - 1);
+  if (!Number.isNaN(n) && n >= 1) return selectOption(n - 1);
+  const letter = LETTERS.indexOf(e.key.toUpperCase());
+  if (e.key.length === 1 && letter >= 0) selectOption(letter);
 }
 
 watch(() => store.index, resetForQuestion);
@@ -141,6 +147,11 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKey);
 });
 
+// Share of the answer timer left, for the draining bar; the last 5 seconds
+// (or last quarter of a short timer) switch it to the warning look.
+const timeLeft = computed(() => (store.settings.timer > 0 ? Math.max(0, remaining.value) / store.settings.timer : 1));
+const timeLow = computed(() => store.settings.timer > 0 && remaining.value <= Math.min(5, store.settings.timer / 4));
+
 const mmss = computed(() => {
   const s = Math.max(0, remaining.value);
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -150,13 +161,24 @@ const mmss = computed(() => {
 <template>
   <div class="panel" v-if="q">
     <EndGameButton />
-    <div class="brand">Trivia Builder</div>
-    <div v-if="isReading" class="timer reading-timer">📖 Reading… {{ delayRemaining }}</div>
-    <div v-else-if="store.settings.timer > 0" class="timer">{{ mmss }}</div>
+    <div class="top-row">
+      <div class="brand">Trivia Builder</div>
+      <GameProgress />
+      <div v-if="isReading" class="timer reading-timer">📖 Reading… {{ delayRemaining }}</div>
+      <div v-else-if="store.settings.timer > 0" class="timer" :class="{ 'is-low': timeLow }">
+        <span v-if="timeLow">⏰ Hurry!</span> {{ mmss }}
+      </div>
+      <div v-else class="timer-spacer"></div>
+    </div>
+    <div v-if="!isReading && store.settings.timer > 0" class="timer-track" :class="{ 'is-low': timeLow }" aria-hidden="true">
+      <div class="timer-fill" :style="{ transform: `scaleX(${timeLeft})` }"></div>
+    </div>
 
-    <div class="category">Category: {{ q.categories.join(', ') || '—' }}</div>
-    <div class="qnum">Question #{{ store.index + 1 }} of {{ store.questions.length }}:</div>
-    <div class="qtext">{{ q.question }}</div>
+    <div class="q-card hero-card">
+      <div class="medallion" aria-hidden="true">?</div>
+      <div class="category-chip">{{ q.categories.join(', ') || 'General' }}</div>
+      <div class="qtext">{{ q.question }}</div>
+    </div>
 
     <Media v-if="q.attachment" :src="q.attachment" />
 
@@ -164,25 +186,29 @@ const mmss = computed(() => {
 
     <template v-else>
       <div class="options" v-if="displayOptions.length">
-        <div
+        <button
           v-for="(opt, i) in displayOptions"
           :key="i"
-          class="option"
+          type="button"
+          class="option hero-item"
+          :style="{ '--i': i + 1 }"
           :class="{ selected: selected === i, 'not-selectable': !selectable }"
+          :aria-pressed="selectable ? selected === i : undefined"
           @click="selectOption(i)"
         >
-          <span class="num">{{ i + 1 }}</span>
-          <span v-if="opt.text">{{ opt.text }}</span>
+          <span class="badge">{{ LETTERS[i] }}</span>
+          <span class="option-text" v-if="opt.text">{{ opt.text }}</span>
           <Media v-if="opt.attachment" :src="opt.attachment" class="option-media" />
-        </div>
+          <span v-if="selected === i" class="locked">✓ Locked in</span>
+        </button>
       </div>
 
-      <p v-if="hintShown" class="hint-text" style="font-size: 18px">💡 {{ q.hint }}</p>
+      <p v-if="hintShown" class="hint-bubble">💡 {{ q.hint }}</p>
 
       <div class="q-actions">
-        <button v-if="hasHint" class="btn btn-orange" @click="showHint">HINT?</button>
+        <button v-if="hasHint" class="btn btn-orange" :disabled="hintShown" @click="showHint">💡 HINT <kbd>H</kbd></button>
         <span v-else></span>
-        <button class="btn btn-green" @click="submit">{{ submitLabel }}</button>
+        <button class="btn btn-green btn-big" @click="submit">{{ submitLabel }} <kbd>Enter</kbd></button>
       </div>
     </template>
   </div>

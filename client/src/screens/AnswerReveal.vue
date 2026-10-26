@@ -3,6 +3,9 @@ import { computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
+import GameProgress from '../components/GameProgress.vue';
+
+const LETTERS = 'ABCDE';
 
 const q = computed(() => store.currentQuestion);
 const isChoice = computed(() => q.value && (q.value.type === 'Multiple Choice' || q.value.type === 'True or False'));
@@ -27,6 +30,13 @@ function optionState(opt) {
   return '';
 }
 
+// The medallion on the card carries the verdict: ✓ / ✗ when graded, ! otherwise.
+const medal = computed(() => (!graded.value ? '!' : correct.value ? '✓' : '✗'));
+const verdictText = computed(() =>
+  correct.value ? 'Correct!' : store.selectedAnswer ? 'Incorrect' : 'No answer selected',
+);
+const optionMark = { correct: '✓', 'chosen-wrong': '✗' };
+
 function next() {
   store.afterAnswer();
 }
@@ -49,30 +59,50 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 <template>
   <div class="panel answer" v-if="q">
     <EndGameButton />
-    <div class="brand">Trivia Builder</div>
-    <button class="btn back-btn" @click="back">&lt; BACK</button>
-    <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
+    <div class="top-row">
+      <div class="brand">Trivia Builder</div>
+      <GameProgress />
+      <div class="reveal-nav">
+        <button class="btn back-btn" @click="back">&lt; BACK</button>
+        <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
+      </div>
+    </div>
 
-    <div class="category">Category: {{ q.categories.join(', ') || '—' }}</div>
-    <div class="qnum">Question #{{ store.index + 1 }}:</div>
-    <div class="qtext">{{ q.question }}</div>
+    <div class="q-card">
+      <div
+        class="medallion reveal-hero"
+        :class="graded ? (correct ? 'medal-correct' : 'medal-wrong') : ''"
+        aria-hidden="true"
+      >{{ medal }}</div>
+      <div class="category-chip">{{ q.categories.join(', ') || 'General' }}</div>
+      <div class="qtext">{{ q.question }}</div>
+    </div>
 
     <Media v-if="q.attachment" :src="q.attachment" />
 
-    <div v-if="graded" class="verdict" :class="correct ? 'verdict-correct' : 'verdict-wrong'">
-      {{ correct ? '✓ Correct!' : (store.selectedAnswer ? '✗ Incorrect' : '✗ No answer selected') }}
+    <div v-if="graded" class="verdict reveal-hero" :class="correct ? 'verdict-correct' : 'verdict-wrong'">
+      {{ correct ? '✓' : '✗' }} {{ verdictText }}
     </div>
 
-    <div class="answer-body">Answer was: {{ q.currentAnswer }}</div>
+    <div class="answer-banner reveal-hero" style="--i: 1">
+      <span class="answer-label">Answer</span>
+      <span class="answer-text">{{ q.currentAnswer }}</span>
+    </div>
 
-    <div class="answer-body explanation" v-if="q.explanation">{{ q.explanation }}</div>
+    <div class="answer-body explanation reveal-hero" style="--i: 2" v-if="q.explanation">{{ q.explanation }}</div>
 
-    <div class="answer-options" v-if="isChoice">
-      Options:
-      <span v-for="(opt, i) in choiceOptions" :key="i" :class="optionState(opt)">
-        {{ i + 1 }}) {{ opt.text }}
+    <div class="options answer-options" v-if="isChoice">
+      <div
+        v-for="(opt, i) in choiceOptions"
+        :key="i"
+        class="option not-selectable"
+        :class="optionState(opt) || 'dimmed'"
+      >
+        <span class="badge">{{ LETTERS[i] }}</span>
+        <span class="option-text" v-if="opt.text">{{ opt.text }}</span>
         <Media v-if="opt.attachment" :src="opt.attachment" class="option-media" />
-      </span>
+        <span v-if="optionMark[optionState(opt)]" class="mark">{{ optionMark[optionState(opt)] }}</span>
+      </div>
     </div>
   </div>
 </template>

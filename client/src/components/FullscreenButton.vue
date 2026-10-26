@@ -21,7 +21,7 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', sync));
 
 <template>
   <button
-    class="fullscreen-btn"
+    class="tool-btn"
     :title="isFullscreen ? 'Exit fullscreen' : 'Go fullscreen'"
     @click="toggle"
   >

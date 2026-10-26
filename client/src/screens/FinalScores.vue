@@ -3,6 +3,10 @@ import { computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
 
 const rows = computed(() => [...store.totals].sort((a, b) => b.total - a.total));
+// Ties share a rank (1, 1, 3), and the top three get a medal.
+const MEDALS = ['🥇', '🥈', '🥉'];
+const rankOf = (r) => rows.value.findIndex((x) => x.total === r.total);
+
 const winners = computed(() => store.winners);
 const winnerText = computed(() => {
   const w = winners.value;
@@ -24,12 +28,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 <template>
   <div class="panel">
     <div class="brand">Trivia Builder</div>
-    <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
+    <button class="btn btn-yellow next-btn" @click="next">NEW GAME &gt;</button>
+    <div class="medallion medal-trophy reveal-hero" aria-hidden="true">🏆</div>
     <h1 class="title">Final Scores</h1>
 
     <table class="scores-table">
       <thead>
         <tr>
+          <th>Rank</th>
           <th>Team/User</th>
           <th>Points</th>
           <th># of Hints</th>
@@ -37,7 +43,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         </tr>
       </thead>
       <tbody>
-        <tr v-for="r in rows" :key="r.id">
+        <tr v-for="r in rows" :key="r.id" :class="{ 'is-winner': rankOf(r) === 0 }">
+          <td class="rank">{{ MEDALS[rankOf(r)] || '' }} {{ rankOf(r) + 1 }}</td>
           <td>{{ r.name }}</td>
           <td>{{ r.points }}</td>
           <td>{{ r.hints }}</td>
@@ -50,6 +57,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       Total = points − hints (hints subtract points is on).
     </p>
 
-    <div class="winner">{{ winnerText }}</div>
+    <div class="winner reveal-hero" style="--i: 5">{{ winnerText }}</div>
   </div>
 </template>
