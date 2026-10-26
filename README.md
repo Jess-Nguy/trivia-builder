@@ -163,6 +163,23 @@ exact (with prose in `Explanation`) is what unlocks grading.
   reopens, limited to categories that still exist; switching to another file
   defaults to "all selected".)
 
+## Look and feel
+
+The app is styled as a cartoon game show: chunky outlined cards on sticker shadows, a "?" medallion on the question card, and option pills with A–E letter badges so the room can shout "B!". The display font is Fredoka from Google Fonts; offline it falls back to Comic Sans.
+
+**Toolbar (top-right, every screen):**
+
+- **A− / A+** scales the game board from 90% to 150% so the back of the couch can read it on a TV. Remembered across reloads.
+- **Theme** cycles Auto, Light, and Dark. Auto follows the OS. Remembered across reloads.
+- **⌨ Keys** opens the shortcut list for the current screen. Pressing `?` anywhere does the same, and `Esc` closes it. While it is open, game keys like `Enter` are ignored.
+- **Fullscreen** toggles fullscreen.
+
+**Play aids:** every in-game screen shows "Question N of M" with a progress bar. The answer timer drains as a bar and switches to an orange "⏰ Hurry!" for the last 5 seconds. The Scoreboard numbers each team and tags whoever is ahead with "👑 Leading". Final Scores ranks teams with 🥇🥈🥉, and ties share a rank.
+
+**Colour and contrast:** colours are tokens at the top of `client/src/style.css`, each with a light and a dark value via `light-dark()`, so the app needs Chrome 123+, Safari 17.5+ or Firefox 120+. Every text and button pair was checked against WCAG 2 (4.5:1 for text, 3:1 for large text and control edges). Keep new pairs on the tokens so they stay that way.
+
+**Motion** is budgeted: one hero per screen (the question card and options arriving, the verdict and answer on Answer Reveal, the winner on Final Scores), a short fade between screens, a hover lift on pickable options, and press feedback on buttons. The inventory comment at the top of `style.css` lists each one; stay inside it. Everything that moves respects `prefers-reduced-motion`: fades stay, sliding and scaling stop.
+
 ## How a game flows
 
 Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final Scores.
@@ -172,10 +189,10 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
   that many seconds. Press `Space` to skip straight to answering.
 - **Timer:** set per-question seconds (0 = none, max 300). At 0 the question
   auto-advances to the answer.
-- **Question screen keys:** `1`–`5` select an option, `H` reveals the hint (when
-  one exists), `Enter` submits (or reveals, in showcasing). In showcasing mode the
-  options aren't selectable, so `1`–`5` do nothing.
-- **Answer Reveal** lists choice options in the **same order and numbering** as the
+- **Question screen keys:** `A`–`E` or `1`–`5` select an option, `H` reveals the
+  hint (when one exists), `Enter` submits (or reveals, in showcasing). In showcasing
+  mode the options aren't selectable, so those keys do nothing.
+- **Answer Reveal** lists choice options in the **same order and lettering** as the
   Question screen (Multiple Choice options are shuffled per question, so the two
   pages stay in sync). A `< BACK` button — also `Backspace` or `←` — returns to the
   question if you advanced by accident; it un-records the reveal so the question
@@ -187,9 +204,9 @@ Game Mode → Question → Answer Reveal → Manual Scoreboard (loops) → Final
   graded answer). In **showcasing** it always appears, with point controls active,
   so you can award points for fun even with both checkboxes off.
 - **Final Scores** tallies points, hints, and total (total subtracts hints when
-  "hints subtracts points" is on), names the winner, and `Next` returns to Game Mode.
+  "hints subtracts points" is on), names the winner, and `NEW GAME` returns to Game Mode.
 
-A **fullscreen toggle** sits in the corner on every screen (great for casting the
+A **fullscreen toggle** sits in the toolbar on every screen (great for casting the
 game to a TV). The screen always autoplays video/YouTube media — and masks the
 YouTube title bar — so a paused thumbnail or title can't give the answer away.
 YouTube media plays through the IFrame API and is **forced unmuted on play**, so a

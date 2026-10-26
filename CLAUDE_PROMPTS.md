@@ -69,3 +69,9 @@ Another feature needs to added to use `Option 1 Attachment`, `Option 2 Attachmen
 - Is it possible to have the app remember which questions that have already been played and not play them again for each app load session? For example say I set up a game to load "import/Official JUNE 5th - 217q - Trivia Mix w_ hints.csv" and I do 20 questions for 1 game mode. I finish them but then I do another 20 questions. I don't want the game to give me the same questions again. If needed a new feature could be added where there's a proper shutdown button that would clear the cache out. Or maybe this data can be stored in a csv copy of the import file under. `session/Copy <now's timestamp>- Official JUNE 5th - 217q - Trivia Mix w_ hints.csv` Ask me any question for clarification.
 
 - I need you to add new feature where there's a button to properly shutdown the game and clear the cache out for it.
+
+- bug fix: on the Answer Reveal screen the BACK and NEXT buttons sat too close together. Wrapped them in a `.reveal-nav` flex container with a gap so they keep clear spacing regardless of button width. APPLIED.
+
+- theme: colour tokens with light + dark values (`light-dark()`, follows the OS, `data-theme` override), contrast-checked; screen-change fade, Answer Reveal and Final Scores hero animations, 150ms press feedback; all movement respects `prefers-reduced-motion`. Motion inventory lives at the top of `client/src/style.css`. APPLIED.
+
+- restyle: make it creative in a cartoony game-show way (reference: neon quiz boards with lettered option pills), animate the hover highlight, and add UX features for playing locally. Added the game-show theme, A–E option pills with hover lift, a toolbar (text size, theme, `?` shortcuts, fullscreen), question progress, a draining timer bar with a Hurry! state, a Scoreboard leader tag, and ranked Final Scores. APPLIED.
