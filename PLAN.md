@@ -177,7 +177,7 @@ See SCOPE §4 Feature 28.
 **Tasks**
 - **Bank + playlists backend** (`server/library.js`): `data/questions.json` and `data/playlists.json`, atomic writes, `normalizeQuestion` validation that mirrors `parseCsv`, playlist membership by question id, CSV import with dedupe, playlist CSV export.
 - **API** (`server/apiHandler.js`): `GET /api/library`; `POST/PUT/DELETE /api/library/questions[/:id]`; `POST/GET/PUT/DELETE /api/library/playlists[/:id]`, `POST …/:id/add`, `GET …/:id/csv`; `POST /api/library/import`.
-- **Builder screen** (`Builder.vue`, `QuestionEditor.vue`, `CategoryPicker.vue`): playlists column, filterable question list with bulk add, type-aware editor.
+- **Builder screen** (`Builder.vue`, `QuestionEditor.vue`, `CategoryPicker.vue`): playlists column, filterable question list with bulk add, type-aware editor. Answers in the list start hidden; **Show all answers** reveals them, and each row's **Show / Hide** button flips just that row.
 - **Game Mode**: playlists in the questions dropdown (value `playlist:<id>`, so CSV names and their played history are unchanged); `store.startGame` keeps order for ordered playlists.
 
 **Tests:** `npm test` (`test/library.test.js`, against the 316-question CSV).

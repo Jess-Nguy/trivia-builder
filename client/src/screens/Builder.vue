@@ -33,6 +33,9 @@ const selected = ref([]);
 const bulkTarget = ref('');
 const editing = ref(null); // null | 'new' | question id
 const editor = ref(null);
+// Answers start hidden so the host can browse with players watching.
+const showAllAnswers = ref(false);
+const flippedAnswers = ref(new Set()); // rows toggled against showAllAnswers
 
 const newPlaylist = reactive({ name: '', ordered: false });
 const importFile = ref('');
@@ -164,6 +167,19 @@ function toggleAllVisible() {
   selected.value = allVisibleSelected.value
     ? selected.value.filter((id) => !ids.includes(id))
     : [...new Set([...selected.value, ...ids])];
+}
+
+const answerShown = (q) => showAllAnswers.value !== flippedAnswers.value.has(q.id);
+
+function toggleAnswer(id) {
+  const next = new Set(flippedAnswers.value);
+  if (!next.delete(id)) next.add(id);
+  flippedAnswers.value = next;
+}
+
+function toggleAllAnswers() {
+  showAllAnswers.value = !showAllAnswers.value;
+  flippedAnswers.value = new Set();
 }
 
 function addPlaylist() {
@@ -347,6 +363,9 @@ function runImport() {
               Remove from this playlist
             </button>
           </template>
+          <button type="button" class="btn-link answers-toggle" :aria-pressed="showAllAnswers" @click="toggleAllAnswers">
+            {{ showAllAnswers ? 'Hide all answers' : 'Show all answers' }}
+          </button>
         </div>
 
         <p v-if="loading" class="hint-text">Loading…</p>
@@ -367,7 +386,8 @@ function runImport() {
             <button type="button" class="q-main" @click="openEditor(q.id)">
               <span class="q-text">{{ q.question }}</span>
               <span class="q-meta">
-                <span class="q-answer">✓ {{ q.currentAnswer }}</span>
+                <span v-if="answerShown(q)" class="q-answer">✓ {{ q.currentAnswer }}</span>
+                <span v-else class="q-answer-hidden">Answer hidden</span>
                 <span class="q-type">{{ q.type }}</span>
                 <span v-for="c in q.categories" :key="c" class="cat-tag small">{{ c }}</span>
                 <span v-if="q.attachment" title="Has media">🖼</span>
@@ -376,6 +396,13 @@ function runImport() {
                 <span v-if="!activePlaylist" class="q-in">in {{ playlistCount(q) }} playlist(s)</span>
               </span>
             </button>
+            <button
+              type="button"
+              class="tool-btn"
+              :aria-pressed="answerShown(q)"
+              :aria-label="`${answerShown(q) ? 'Hide' : 'Show'} answer: ${q.question}`"
+              @click="toggleAnswer(q.id)"
+            >{{ answerShown(q) ? 'Hide' : 'Show' }}</button>
             <span v-if="canReorder" class="q-move">
               <button type="button" class="tool-btn" :disabled="i === 0" :aria-label="`Move up: ${q.question}`" @click="move(i, -1)">↑</button>
               <button type="button" class="tool-btn" :disabled="i === visible.length - 1" :aria-label="`Move down: ${q.question}`" @click="move(i, 1)">↓</button>
