@@ -36,7 +36,7 @@ const teamRows = computed(() =>
       <div class="join-qr" v-html="qrSvg"></div>
       <div class="join-info">
         <p class="join-step">Scan, or open on a phone on the same Wi-Fi:</p>
-        <p class="join-url">{{ url.replace(/\?.*/, '') }}</p>
+        <p class="join-url">{{ url }}</p>
         <p class="join-step">Room code</p>
         <p class="join-code">{{ party.code }}</p>
         <ul class="join-teams">
