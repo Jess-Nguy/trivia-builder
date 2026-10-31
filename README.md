@@ -1,8 +1,9 @@
 # Trivia Builder
 
-A localhost web app for running a couch-party trivia night from a CSV. Pick a
-questions file, set up teams, and play through a host-controlled flow with manual
-scoring. No database — just CSV files in `/import`.
+A localhost web app for building and running a couch-party trivia night. Write
+questions in the **Question Builder**, group them into playlists (or drop CSVs into
+`/import`), set up teams, and play through a host-controlled flow with manual
+scoring. No database: CSV files in `/import` plus two JSON files in `data/`.
 
 See [SCOPE.md](SCOPE.md) for the full feature scope and [PLAN.md](PLAN.md) for the build plan.
 
@@ -21,6 +22,19 @@ npm run dev                   # starts the app on http://localhost:5173
 `npm run dev` runs the Vite dev server, which also serves the API (`/api/...`) as
 middleware — a single process on one port, no separate backend to start.
 
+### Tests
+
+```bash
+npm test               # node:test, no extra dependencies
+```
+
+`test/library.test.js` runs the Question Builder against a copy of
+`import/316 - Total Trivia Mix w_ hints - ALL.csv`: importing it, saving every row
+back through the builder's validation, exporting a playlist and parsing it again,
+playlist membership, and ordered play. It sets `TRIVIA_DATA_DIR` to a temp folder,
+so your real `data/` bank and the committed CSV are never touched. The ordered-play
+test imports `client/src/store.js`, so run `npm --prefix client install` first.
+
 ### Production
 
 ```bash
@@ -28,7 +42,48 @@ npm run build          # builds the client into client/dist
 npm start              # Express serves the built app + API on http://localhost:3001
 ```
 
-## Adding questions
+## Question Builder
+
+Click **✏️ Build questions** on the Game Mode screen. The builder has three columns:
+
+- **Playlists** (left): *All questions* (the whole bank) and each playlist with its
+  question count (`↧` marks one that plays in order). Create a playlist here and
+  choose **Play in order** or leave it shuffled. **Import a CSV** copies a file from
+  `/import` into the bank and makes a playlist from it; rows already in the bank
+  (same question + answer + question attachment) are reused, not duplicated.
+- **Questions** (middle): search by question or answer text, filter by category or
+  type, and tick rows to **Add to playlist…** in bulk. Inside a playlist you can
+  rename it, switch between **Shuffle** and **Play in order**, **Export CSV** (the
+  same columns as `/import`, so it can be dropped back in or shared), remove
+  questions (× or bulk), and delete the playlist (its questions stay in the bank).
+  For an ordered playlist, ↑/↓ reorder questions; clear the filters first.
+- **Editor** (right): pick the type, then fill the fields it needs. Multiple Choice
+  shows option boxes A to E with a ✓ to mark the correct one, which fills the
+  Answer; it warns when the Answer doesn't exactly match an option, because then
+  the question won't auto-grade. True or False is a TRUE/FALSE choice.
+  **Categories** suggest the 22 known ones (Animal, Biology, Meme/Trends …) plus any
+  already used; type a new name and press `Enter` or `,` to make your own.
+  **Playlists** checkboxes put the question in any number of playlists. Hint,
+  explanation, reading delay and per-option media sit under a collapsible section.
+  Media URLs have a **Preview** link. **Save & add another** keeps the type,
+  categories and playlists for the next question. Unsaved edits prompt before you
+  switch questions or leave.
+
+A question lives once in the bank and is *referenced* by playlists, so editing it
+changes it everywhere; deleting it removes it from every playlist.
+
+### Storage
+
+- `data/questions.json`: the question bank, in the same shape the CSV parser
+  produces, plus an `id` and timestamps.
+- `data/playlists.json`: `{ id, name, ordered, questionIds[] }` per playlist.
+
+Both are created on the first save and written atomically (temp file + rename).
+Set `TRIVIA_DATA_DIR` to keep them somewhere else (the tests use this).
+Validation matches the CSV rules below (and also requires a True or False answer to be TRUE or FALSE) and runs on the server. Played history for
+a playlist is tracked separately from any CSV it was imported from.
+
+## Adding questions as CSV
 
 Drop a `.csv` file into the `import/` folder. It appears in the file dropdown on
 the Game Mode screen automatically.
@@ -136,7 +191,10 @@ exact (with prose in `Explanation`) is what unlocks grading.
 - **Teams/users:** 1–8. Each slot has an editable name (blank = a default
   `Team/User N`). Names are saved to the browser's localStorage so they survive
   reloads and carry across rounds; two teams can't share a name (case-insensitive).
-- **Questions file:** dropdown of every `.csv` in `/import`.
+- **Questions:** one dropdown with your builder **Playlists** first (with their
+  count, and "in order" for ordered ones), then every `.csv` in `/import`. An
+  ordered playlist plays its first N unplayed questions in saved order instead of
+  a random sample; category filtering still applies and keeps that order.
 - **Category filter:** once a file loads, its categories appear as checkboxes
   (with a "Select all"). Pick one or more to narrow the pool to questions in those
   categories; questions with no category fall into an `Uncategorized` bucket so they

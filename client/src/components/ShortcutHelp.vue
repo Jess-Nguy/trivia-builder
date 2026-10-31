@@ -5,6 +5,7 @@ import { display } from '../display.js';
 
 const SHORTCUTS = {
   gameMode: [['?', 'Show this list']],
+  builder: [['Enter', 'Add a typed category (in the category box)']],
   question: [
     ['A–E or 1–5', 'Pick an option'],
     ['H', 'Show the hint'],

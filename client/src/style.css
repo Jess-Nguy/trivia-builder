@@ -16,7 +16,9 @@
      crooked tombstones rise from the dirt from 700ms, 60ms apart (max 6), and a
      ghost fades in above each, then bobs forever (3.2s). Under reduced motion
      the crown, graves and ghosts just fade in and hold still.
-   Layout: screen change 250ms in / 150ms out; shortcut overlay 200ms in / 150ms out.
+   Layout: screen change 250ms in / 150ms out; shortcut overlay 200ms in / 150ms out;
+     Question Builder editor panel fades and slides in 250ms / out 150ms.
+   Question Builder has no hero: it is a work screen, so it stays quiet.
    Feedback: selectable option pills lift 3px on hover and press down into their
      sticker shadow (user-requested hover highlight); buttons press to 0.97;
      score values pop 200ms when they change; colours change in 150ms.
@@ -468,6 +470,120 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
   text-decoration: underline;
 }
 .btn-link:hover { color: var(--text); }
+
+/* Question Builder: playlists | question list | editor. */
+.builder-link { position: absolute; top: 22px; left: 36px; font-size: 15px; padding: 6px 14px; }
+.panel.builder { max-width: 1480px; padding-top: 28px; }
+.builder-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.builder-head .title { margin: 0; }
+.builder-notice { margin: 0 0 10px; }
+.builder-grid { display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: start; }
+.builder-grid.has-editor { grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 1100px) {
+  .builder-grid, .builder-grid.has-editor { grid-template-columns: 1fr; }
+}
+.builder-col {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  min-width: 0;
+}
+.editor-col { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+.col-title { font-size: 20px; margin: 0 0 10px; }
+.col-subtitle { font-size: 16px; margin: 0 0 6px; }
+.btn-small { font-size: 15px; padding: 6px 14px; border-width: 2px; box-shadow: 0 3px 0 var(--shadow); }
+.small-check { display: flex; align-items: center; gap: 6px; font-size: 15px; }
+.hint-text.small { font-size: 13px; }
+.danger-link { color: var(--danger); }
+.danger-link:hover { color: var(--text); }
+
+.builder input[type='text'], .builder input[type='url'], .builder input[type='search'],
+.builder input[type='number'], .builder select, .builder textarea {
+  padding: 7px 10px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--panel);
+  color: var(--text);
+  min-width: 0;
+}
+.builder textarea { resize: vertical; }
+.builder :is(input, select, textarea, button):focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+.builder .invalid { border-color: var(--danger); }
+
+.playlist-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pl-item {
+  width: 100%; display: flex; justify-content: space-between; gap: 8px; text-align: left;
+  background: none; border: 2px solid transparent; border-radius: 10px; padding: 7px 10px;
+  font: inherit; font-size: 15px; color: var(--text); cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+.pl-item:hover { background: var(--hover-tint); }
+.pl-item.active { border-color: var(--ink); background: var(--accent); color: var(--on-accent); font-weight: 700; }
+.pl-count { font-size: 13px; opacity: 0.8; white-space: nowrap; }
+.pl-new, .pl-import { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 2px dashed var(--border); margin-top: 12px; }
+.pl-import p { margin: 0; }
+
+.pl-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-bottom: 10px; }
+.pl-rename { font-size: 20px !important; font-weight: 700; flex: 1 1 200px; }
+.pl-order { gap: 14px; }
+.pl-actions { display: flex; gap: 14px; }
+.list-filters { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-bottom: 8px; }
+.bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 36px; margin-bottom: 6px; }
+.empty-state { padding: 18px 4px; }
+
+.q-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: calc(100vh - 300px); overflow-y: auto; }
+.q-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px;
+  border: 2px solid transparent; border-radius: 10px;
+  transition: background-color var(--dur-fast);
+}
+.q-row:hover { background: var(--hover-tint); }
+.q-row.active { border-color: var(--ink); }
+.q-pos { font-weight: 700; min-width: 24px; text-align: right; color: var(--text-muted); }
+.q-main { flex: 1; min-width: 0; background: none; border: none; padding: 0; text-align: left; font: inherit; color: var(--text); cursor: pointer; }
+.q-text { display: block; font-size: 15px; font-weight: 600; }
+.q-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.q-answer { color: var(--success-text); font-weight: 600; }
+.q-move { display: flex; gap: 2px; }
+
+.cat-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 4px 2px 10px; border-radius: 999px;
+  background: var(--hover-tint); color: var(--text); border: 1px solid var(--border);
+  font-size: 14px;
+}
+.cat-tag.small { font-size: 12px; padding: 0 8px; }
+.cat-tag-x { background: none; border: none; color: var(--text-muted); font-size: 16px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.cat-tag-x:hover { color: var(--danger); }
+.cat-picker-input {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 6px; border: 2px solid var(--border); border-radius: 10px; background: var(--panel);
+}
+.builder .cat-picker-input .cat-draft { border: none; flex: 1 1 140px; padding: 4px; }
+
+.q-editor { display: flex; flex-direction: column; gap: 12px; }
+.editor-title { font-size: 20px; margin: 0; }
+.q-editor .field { display: flex; flex-direction: column; gap: 5px; border: none; margin: 0; padding: 0; font-size: 15px; font-weight: 500; }
+.q-editor legend { padding: 0; margin-bottom: 5px; }
+.q-editor .checks { margin: 0; gap: 8px 18px; }
+.field-error { color: var(--danger); font-size: 14px; font-weight: 600; }
+.field-error::before { content: '⚠ '; }
+.url-row { display: flex; align-items: center; gap: 10px; }
+.url-row input { flex: 1; }
+.option-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.option-row input[type='text'] { flex: 1; }
+.correct-pick { display: flex; align-items: center; gap: 4px; font-weight: 700; color: var(--success-text); cursor: pointer; }
+.points-row label { display: flex; flex-direction: column; gap: 5px; }
+.points-row input { max-width: 120px; }
+.more-toggle { align-self: flex-start; text-decoration: none; }
+.more { display: flex; flex-direction: column; gap: 12px; padding-left: 12px; border-left: 3px solid var(--border); }
+.editor-preview { max-width: 100%; }
+.editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.editor-actions .btn { font-size: 16px; padding: 8px 18px; }
+.editor-actions .danger-link { margin-left: auto; }
 
 /* Question card: speech-bubble board with a "?" medallion on top. */
 .q-card {
@@ -1085,6 +1201,9 @@ kbd {
 .overlay-enter-active { transition: opacity 200ms var(--ease-out); }
 .overlay-leave-active { transition: opacity var(--dur-fast) var(--ease-in); }
 .overlay-enter-from, .overlay-leave-to { opacity: 0; }
+.editor-enter-active { transition: opacity var(--dur-base) var(--ease-out); }
+.editor-leave-active { transition: opacity var(--dur-fast) var(--ease-in); }
+.editor-enter-from, .editor-leave-to { opacity: 0; }
 
 /* Heroes. .hero-card = Question card; .hero-item = option pills staggered by --i
    (max 5); .reveal-hero = Answer Reveal / Final Scores lines staggered by --i. */
@@ -1130,6 +1249,8 @@ kbd {
 @media (prefers-reduced-motion: no-preference) {
   .screen-enter-active { transition-property: opacity, transform; }
   .screen-enter-from { transform: translateY(10px); }
+  .editor-enter-active { transition-property: opacity, transform; }
+  .editor-enter-from { transform: translateX(16px); }
   .hero-card { animation-name: hero-scale; }
   .hero-item, .reveal-hero { animation-name: hero-rise; }
   .medallion.reveal-hero { animation-name: hero-scale; }
