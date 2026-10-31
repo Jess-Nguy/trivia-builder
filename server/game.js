@@ -39,6 +39,8 @@ function randomCode() {
   return Array.from({ length: 4 }, () => CODE_LETTERS[crypto.randomInt(CODE_LETTERS.length)]).join('');
 }
 
+const bank = { submitQuestion, categories: () => getLibrary().categories };
+
 // One room per server: the host browser (on this machine) owns the game state
 // and broadcasts it; phones join with the room code and send answers back. The
 // hub only relays, and trims each phone's copy of the state to its own team's
@@ -46,8 +48,6 @@ function randomCode() {
 //
 // A connection is `{ local, send(obj) }`, so tests can drive the hub without
 // real sockets, and `library` can be swapped for a fake bank.
-const bank = { submitQuestion, categories: () => getLibrary().categories };
-
 export class GameHub {
   constructor({ makeCode = randomCode, library = bank } = {}) {
     this.makeCode = makeCode;

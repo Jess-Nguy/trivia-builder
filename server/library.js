@@ -172,7 +172,7 @@ const FILLER = new Set(
 );
 
 function contentWords(s) {
-  const plain = clean(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const plain = clean(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   return new Set(plain.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w && !FILLER.has(w)));
 }
 

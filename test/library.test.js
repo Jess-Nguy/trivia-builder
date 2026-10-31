@@ -240,6 +240,11 @@ describe('duplicate check', () => {
     assert.ok(dupe('what do KOALAS primarily eat'));
   });
 
+  test('catches the same question with accents left off', () => {
+    const accented = [{ question: 'Which Pokémon evolves into Charizard?', currentAnswer: 'Charmeleon' }];
+    assert.ok(lib.findDuplicate({ question: 'Which Pokemon evolves into Charizard?', currentAnswer: 'x' }, accented));
+  });
+
   test('catches the same question with different filler words', () => {
     assert.ok(dupe('Koalas primarily eat what?'));
   });

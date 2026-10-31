@@ -40,7 +40,7 @@ export const hasDraft = () => !!(draft.question.trim() || draft.answer.trim() ||
 </script>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Media from '../components/Media.vue';
 
 const props = defineProps({
@@ -123,10 +123,10 @@ function submit() {
   });
 }
 
-function startAnother() {
-  Object.assign(draft, blank(), { type: draft.type, category: draft.category });
-  emit('close', false);
-}
+// Once saved, start the next draft, keeping the type and category for a run of similar questions.
+watch(() => props.reply?.ok, (ok) => {
+  if (ok) Object.assign(draft, blank(), { type: draft.type, category: draft.category });
+});
 </script>
 
 <template>
@@ -136,7 +136,7 @@ function startAnother() {
     <template v-if="reply?.ok">
       <p class="phone-locked" role="status">✓ Added to the bank!</p>
       <p class="hint-text">"{{ reply.text }}" might come up in a game. Keep a straight face.</p>
-      <button type="button" class="btn btn-green phone-wide" @click="startAnother">Write another</button>
+      <button type="button" class="btn btn-green phone-wide" @click="emit('close', false)">Write another</button>
       <button type="button" class="btn-link" @click="emit('close', true)">Done</button>
     </template>
 
