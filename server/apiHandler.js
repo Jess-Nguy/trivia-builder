@@ -6,6 +6,7 @@ import {
   createQuestion,
   updateQuestion,
   deleteQuestion,
+  markSeen,
   createPlaylist,
   updatePlaylist,
   addToPlaylist,
@@ -90,6 +91,11 @@ export async function apiMiddleware(req, res, next) {
       if (!filePath || !fileName) return send(400, { error: 'Invalid file name.' });
       if (!fs.existsSync(filePath)) return send(404, { error: 'File not found.' });
       return send(200, importCsv(filePath, fileName));
+    }
+
+    if (p === '/api/library/seen' && m === 'POST') {
+      const { ids } = await readBody(req);
+      return send(200, { changed: markSeen(Array.isArray(ids) ? ids : []) });
     }
 
     if (kind === 'questions') {

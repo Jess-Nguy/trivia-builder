@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
+import WriteQuestion, { hasDraft } from './WriteQuestion.vue';
 
 // A player's phone: join the host's room, pick a team, then follow the host's
 // state and send answers. The host's TV shows the question and media; the
@@ -11,9 +12,14 @@ const RETRY_MS = 1500;
 function loadSaved() {
   try {
     const obj = JSON.parse(localStorage.getItem(SAVED_KEY)) || {};
-    return { token: obj.token || '', code: obj.code || '', team: Number.isInteger(obj.team) ? obj.team : null };
+    return {
+      token: obj.token || '',
+      code: obj.code || '',
+      name: obj.name || '',
+      team: Number.isInteger(obj.team) ? obj.team : null,
+    };
   } catch {
-    return { token: '', code: '', team: null };
+    return { token: '', code: '', name: '', team: null };
   }
 }
 
@@ -36,12 +42,18 @@ watch(saved, () => {
 }, { immediate: true, deep: true });
 
 const codeInput = ref(saved.code);
+const nameInput = ref(saved.name);
 const status = ref('idle'); // idle | connecting | joined
 const error = ref('');
 const state = ref(null);
 const typed = ref('');
 // The answer this phone sent for question `n`, shown until the host confirms it.
 const sent = ref(null);
+const categories = ref([]);
+// Writing a question: the form is open, a submit is in flight, and the relay's last reply.
+const writing = ref(false);
+const sending = ref(false);
+const writeReply = ref(null);
 
 let ws = null;
 let wanted = false;
@@ -54,14 +66,21 @@ function connect() {
   status.value = 'connecting';
   const sock = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/game`);
   ws = sock;
-  sock.onopen = () => send({ t: 'join', code: saved.code, token: saved.token, team: saved.team });
+  sock.onopen = () => send({ t: 'join', code: saved.code, name: saved.name, token: saved.token, team: saved.team });
   sock.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if (msg.t === 'joined') {
       status.value = 'joined';
       error.value = '';
+      categories.value = msg.categories ?? [];
     } else if (msg.t === 'state') {
       state.value = msg.state;
+    } else if (msg.t === 'submitted') {
+      sending.value = false;
+      writeReply.value = { ok: true, text: msg.question };
+    } else if (msg.t === 'rejected') {
+      sending.value = false;
+      writeReply.value = { ok: false, error: msg.error, problems: msg.problems };
     } else if (msg.t === 'error') {
       // A bad code won't fix itself by retrying; go back to the code screen.
       error.value = msg.error;
@@ -80,7 +99,8 @@ function connect() {
 
 function join() {
   saved.code = codeInput.value.trim().toUpperCase();
-  if (!saved.code) return;
+  saved.name = nameInput.value.trim();
+  if (!saved.code || !saved.name) return;
   error.value = '';
   wanted = true;
   connect();
@@ -101,6 +121,27 @@ const phase = computed(() => state.value?.phase ?? 'waiting');
 const question = computed(() => state.value?.question ?? null);
 const mine = computed(() => state.value?.mine ?? null);
 const isTyped = computed(() => question.value && question.value.options.length === 0);
+
+// Phones may write questions whenever nobody is answering one (the relay checks too).
+const canWrite = computed(() => ['lobby', 'reveal', 'scores', 'final'].includes(phase.value));
+// A question going live closes the form; the draft is kept for later.
+watch(canWrite, (open) => {
+  if (!open) writing.value = false;
+});
+
+function openWriter() {
+  writeReply.value = null;
+  writing.value = true;
+}
+function closeWriter(leave) {
+  writeReply.value = null;
+  if (leave) writing.value = false;
+}
+function submitQuestion(question) {
+  sending.value = true;
+  writeReply.value = null;
+  send({ t: 'submit', question });
+}
 
 // A new question clears what this phone sent for the last one.
 watch(() => question.value?.n, () => {
@@ -129,7 +170,7 @@ const isWinner = computed(() => (state.value?.winners ?? []).includes(saved.team
 
 onMounted(() => {
   // Rejoin straight away after a reload or a phone waking up.
-  if (saved.code) join();
+  if (saved.code && saved.name) join();
 });
 onUnmounted(() => {
   wanted = false;
@@ -147,6 +188,14 @@ onUnmounted(() => {
     <!-- Join -->
     <form v-if="status === 'idle'" class="phone-card" @submit.prevent="join">
       <h1 class="phone-title">Join the game</h1>
+      <label class="phone-label" for="nickname">Your nickname</label>
+      <input
+        id="nickname"
+        v-model="nameInput"
+        class="phone-name-input"
+        maxlength="24"
+        autocomplete="nickname"
+      />
       <label class="phone-label" for="code">Room code from the TV</label>
       <input
         id="code"
@@ -158,7 +207,7 @@ onUnmounted(() => {
         spellcheck="false"
       />
       <p v-if="error" class="error">{{ error }}</p>
-      <button class="btn btn-green btn-big phone-wide" :disabled="!codeInput.trim()">JOIN</button>
+      <button class="btn btn-green btn-big phone-wide" :disabled="!codeInput.trim() || !nameInput.trim()">JOIN</button>
     </form>
 
     <p v-else-if="status === 'connecting'" class="phone-card phone-wait">Connecting…</p>
@@ -178,10 +227,23 @@ onUnmounted(() => {
       >{{ t.name }}</button>
     </section>
 
+    <!-- Write a question (lobby, reveal and scores only) -->
+    <WriteQuestion
+      v-else-if="writing && canWrite"
+      :categories="categories"
+      :reply="writeReply"
+      :sending="sending"
+      @submit="submitQuestion"
+      @close="closeWriter"
+    />
+
     <!-- Lobby -->
     <section v-else-if="phase === 'lobby'" class="phone-card phone-wait">
       <p>You're on <strong>{{ myTeam.name }}</strong>.</p>
       <p class="hint-text">Waiting for the host to start…</p>
+      <button type="button" class="btn btn-yellow phone-wide" @click="openWriter">
+        ✍️ {{ hasDraft() ? 'Finish your question' : 'Write a question' }}
+      </button>
       <button type="button" class="btn-link" @click="switchTeam">Switch team</button>
     </section>
 
@@ -190,7 +252,8 @@ onUnmounted(() => {
       <p class="hint-text">Question {{ question.n + 1 }} of {{ question.total }}</p>
       <p class="phone-question">{{ question.text }}</p>
 
-      <p v-if="mine" class="phone-locked" role="status">🔒 Locked in: <strong>{{ mine.label }}</strong></p>
+      <p v-if="question.wrote" class="phone-locked" role="status">✍️ You wrote this one! Watch them squirm.</p>
+      <p v-else-if="mine" class="phone-locked" role="status">🔒 Locked in: <strong>{{ mine.label }}</strong></p>
       <p v-else-if="sent" class="phone-locked" role="status">Sending {{ sent.label }}…</p>
       <p v-else-if="!state.open" class="phone-wait">👀 Eyes on the TV…</p>
 
@@ -211,7 +274,7 @@ onUnmounted(() => {
           <span class="option-text">{{ o.text || '🖼 Picture on the TV' }}</span>
         </button>
       </div>
-      <p v-if="!mine" class="hint-text phone-foot">First answer from your team counts.</p>
+      <p v-if="!mine && !question.wrote" class="hint-text phone-foot">First answer from your team counts.</p>
     </section>
 
     <!-- Reveal -->
@@ -225,6 +288,10 @@ onUnmounted(() => {
       </div>
       <p v-if="mine" class="hint-text">You said: {{ mine.label }}</p>
       <p class="phone-answer">Answer: <strong>{{ question.answer }}</strong></p>
+      <p v-if="question.author" class="hint-text phone-foot">
+        ✍️ {{ question.wrote ? 'You wrote this one' : `Written by ${question.author}` }}
+      </p>
+      <button type="button" class="btn-link" @click="openWriter">✍️ Write a question</button>
     </section>
 
     <!-- Scores / final -->
@@ -236,6 +303,7 @@ onUnmounted(() => {
         </li>
       </ol>
       <p v-if="myStanding && phase !== 'final'" class="hint-text">You're in place {{ myStanding.place }}.</p>
+      <button type="button" class="btn-link" @click="openWriter">✍️ Write a question</button>
     </section>
   </main>
 </template>
@@ -290,6 +358,7 @@ onUnmounted(() => {
   padding: 8px;
 }
 .phone-wide { width: 100%; }
+.phone-name-input { font: inherit; font-size: 22px; padding: 8px; }
 .phone-team-btn {
   font: inherit;
   font-size: 20px;
