@@ -8113,5 +8113,27 @@
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
     "updatedAt": "2026-10-31T18:08:22.283Z"
+  },
+  {
+    "id": "2acbbfa6-31d4-44ee-a667-06fb0e49d6c3",
+    "question": "Where are these characters from?",
+    "options": [],
+    "currentAnswer": "Maplestory",
+    "categories": [
+      "Entertainment",
+      "Games"
+    ],
+    "type": "Single Choice",
+    "attachment": "https://g.nexonstatic.com/media/cw0hrck4/gms.png",
+    "points": 1,
+    "hint": "",
+    "explanation": "",
+    "delaySecs": 0,
+    "source": "public",
+    "submittedBy": "Jess",
+    "authorToken": "cac4791b8a21dd2e2adca424",
+    "seenAt": "2026-10-31T20:23:47.270Z",
+    "createdAt": "2026-10-31T20:23:26.753Z",
+    "updatedAt": "2026-10-31T20:23:26.753Z"
   }
 ]

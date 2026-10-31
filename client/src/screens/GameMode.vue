@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { store } from '../store.js';
+import AppName from '../components/AppName.vue';
 import { fetchFiles, fetchQuestions, fetchBackgroundAudio, fetchLibrary, fetchPlaylist } from '../api.js';
 import { startParty, stopParty } from '../multiplayer.js';
 import JoinPanel from '../components/JoinPanel.vue';
@@ -225,7 +226,7 @@ function startGame() {
 
 <template>
   <div class="panel">
-    <div class="plaque flicker-on"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
+    <div class="plaque flicker-on"><AppName /></div>
     <h1 class="title">Game Mode</h1>
     <button type="button" class="btn back-btn builder-link" @click="store.screen = 'builder'">✏️ Build questions</button>
 

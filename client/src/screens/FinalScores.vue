@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
+import AppName from '../components/AppName.vue';
 import Confetti from '../components/Confetti.vue';
 
 const rows = computed(() => [...store.totals].sort((a, b) => b.total - a.total));
@@ -92,7 +93,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
 <template>
   <div class="panel">
-    <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
+    <div class="plaque"><AppName /></div>
     <button class="btn btn-yellow next-btn" @click="next">NEW GAME &gt;</button>
     <h1 class="title">Final Scores</h1>
 

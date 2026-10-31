@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
+import AppName from '../components/AppName.vue';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
 import GameProgress from '../components/GameProgress.vue';
@@ -76,7 +77,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel answer" v-if="q">
     <EndGameButton />
     <div class="top-row">
-      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
+      <div class="plaque"><AppName /></div>
       <GameProgress />
       <div class="reveal-nav">
         <button class="btn back-btn" @click="back">&lt; BACK</button>
@@ -90,6 +91,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         :class="graded ? (correct ? 'medal-correct' : 'medal-wrong') : ''"
         aria-hidden="true"
       >{{ medal }}</div>
+      <span v-if="graded && correct" class="coin-pop" aria-hidden="true"></span>
       <div class="category-chip">{{ q.categories.join(', ') || 'General' }}</div>
       <div class="qtext">{{ q.question }}</div>
     </div>
@@ -109,6 +111,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     </div>
 
     <div class="answer-body explanation reveal-hero" style="--i: 2" v-if="q.explanation">{{ q.explanation }}</div>
+    <p v-if="q.source === 'public'" class="written-by reveal-hero" style="--i: 2">✍️ Written by <strong>{{ q.submittedBy }}</strong></p>
 
     <div v-if="store.phonePlay" class="team-answers reveal-hero" style="--i: 3">
       <p class="hint-text">Phone answers · click a team or press its number to flip right/wrong</p>

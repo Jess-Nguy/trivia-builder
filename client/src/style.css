@@ -30,17 +30,34 @@
    Final Scores confetti: one 2-4.5s burst when someone scored, then removed.
      Breaks the 800ms hero budget; requested to match the reference. Skipped
      entirely under reduced motion (Confetti.vue checks before rendering).
-   Not adopted from the reference: twinkling stars, floating moon, flying bats,
-     scrolling ticker (infinite decorative loops).
-   Ambient loops, dark backdrop only (StageBackdrop.vue), requested to match the
-     Halloween Heist reference; they break the no-infinite-decorative-loops rule:
-     ~24 skyline windows flicker on and off (2-7s each, steps), 3 rooftop
-     beacons blink (2.4s), 1 in 6 stars twinkle (4s), and 3 birds cross the sun
-     (26-41s, linear) flapping (0.4s). All of it sits under
-     prefers-reduced-motion: no-preference, so with reduced motion the scene is
-     completely still. The grid floor deliberately does not scroll: on a TV it
-     would pull eyes off the question.
-   Static: the light game-show stage and every glow never move or pulse.
+   Not adopted from the Halloween Heist reference: floating moon, flying
+     bats, scrolling ticker.
+   Ambient loops, dark backdrop only (StageBackdrop.vue), user-requested to
+     feel like a neon-city game; they break the no-infinite-decorative-loops
+     rule: the floor grid rolls toward the viewer (4.5s, ease-in so rows bunch
+     at the horizon like perspective), the sun's stripes slide down (3s,
+     linear), 2 hover cars cross the sky (24s and 33s, opposite ways), ~24
+     windows and a few tower panes flicker (2-7s, steps), 2 shop signs
+     flicker on (7s), 4 neon
+     strips pulse (2.6s), 4 beacons blink (2.4s), 1 in 6 stars and 6 sparkles
+     twinkle, and a shooting star crosses every 11s. All of it sits under
+     prefers-reduced-motion: no-preference, so with reduced motion the scene
+     is completely still (cars and the shooting star stay hidden).
+   Cut: the birds crossing the sun (a city at night has hover cars instead).
+   Pixel arcade (light only), user-requested to feel like a pixel platformer:
+     the Question card drops in and option pills rise on frame-stepped timing
+     (steps(4)); a picked option and the ✓ medallion bump up like a hit block
+     (240-300ms, steps(3)); a correct reveal pops a spinning coin out of the
+     medallion (800ms, steps(8), breaks the 800ms hero budget once combined
+     with the stamp); buttons and pills hover on steps(2).
+   Ambient loops, light backdrop (PixelBackdrop.vue), user-requested; they
+     break the no-infinite-decorative-loops rule: 4 clouds drift across
+     (170-240s, linear), 7 coins spin (1.2s, frame-stepped), 2 sparkles
+     twinkle (1.4s), and a slime hops every 3.2s. All under
+     prefers-reduced-motion: no-preference, so reduced motion keeps the scene
+     still and drops the coin pop.
+   Cut: waving castle flags (too small to read on a TV, so pure decoration).
+   Static: every glow never moves or pulses.
    Gradients: beyond the question card, the dark backdrop's sky, sun, glow and
      floor use gradients, breaking the one-gradient rule; requested to match
      the synthwave "Trivia Night" reference.
@@ -49,8 +66,9 @@
 
 /* Colour tokens. Two looks, one set of tokens via light-dark(): the OS picks
    one and the toolbar's theme toggle sets data-theme="light|dark" on <html>.
-   Light: "game-show stage", a cartoon set with chunky ink outlines on sticker
-   shadows. Dark: "neon game night", glowing tube outlines on a synthwave
+   Light: "pixel arcade", a bright family-friendly retro game in blue, red,
+   white, green and yellow, with a pixel font, square corners and bevelled
+   buttons (see the "Pixel arcade" block for the light-only shape rules). Dark: "neon game night", glowing tube outlines on a synthwave
    scene (see the "Neon glow" block, which holds the dark-only rules).
    Needs Chrome 123+, Safari 17.5+ or Firefox 120+. */
 :root {
@@ -58,42 +76,55 @@
   --ui-scale: 1;
   --font-display: 'Fredoka', 'Comic Sans MS', 'Segoe UI', system-ui, sans-serif;
   --font-neon: 'Tilt Neon', 'Fredoka', system-ui, sans-serif;
+  /* Light theme headings only. Everything else stays Fredoka: the pixel face
+     is hard to read small, and its B and C look like 8 and 0. */
+  --font-pixel: 'Pixelify Sans', var(--font-display);
 
-  --bg: light-dark(#d9ccff, #0d0118);
+  --bg: light-dark(#8fd8ff, #0d0118);
   --surface: light-dark(#ffffff, #120f2a);
   --panel: light-dark(#ffffff, #100d26);
-  --text: light-dark(#24123f, #f6f1ff);
-  --text-muted: light-dark(#5e4f82, #b9b0dd);
-  /* Outline: cartoon ink in light, a white neon tube in dark. */
-  --ink: light-dark(#24123f, #f3ecff);
-  --shadow: light-dark(#24123f, #05040d);
-  --border: light-dark(#6a5a92, #b9b0dd);
-  --hover-tint: light-dark(#fff3c4, #221c4a);
-  --control: light-dark(#6a3de8, #ffd23e);
+  --text: light-dark(#1f2340, #f6f1ff);
+  --text-muted: light-dark(#4a5078, #b9b0dd);
+  /* Outline: navy pixel ink in light, a white neon tube in dark. */
+  --ink: light-dark(#1f2340, #f3ecff);
+  --shadow: light-dark(#1f2340, #05040d);
+  --border: light-dark(#5a6290, #b9b0dd);
+  --hover-tint: light-dark(#fff4b8, #221c4a);
+  --disabled-bg: light-dark(#e8ebf5, #0d0118);
+  --control: light-dark(#2f5bd8, #ffd23e);
+  --on-control: #ffffff;
+  /* Answer options: arcade-blue buttons in light, outlined tubes in dark. */
+  --option-bg: light-dark(#2f5bd8, #120f2a);
+  --option-hover: light-dark(#3f6ae6, #221c4a);
+  --on-option: light-dark(#ffffff, #f6f1ff);
+  /* Pixel bevel on buttons (light only): dark bottom edge, light top edge. */
+  --bevel-low: light-dark(rgba(0, 0, 0, 0.25), transparent);
+  --bevel-high: light-dark(rgba(255, 255, 255, 0.4), transparent);
   /* Violet halo behind white tubes (dark only). */
   --tube-halo: rgba(176, 120, 255, 0.55);
 
-  /* One accent: game-show amber in light, neon yellow in dark. Primary
+  /* One accent: arcade yellow in light, neon yellow in dark. Primary
      actions, the selected option, the answer. */
-  --accent: light-dark(#ffc93c, #ffd23e);
-  --accent-hover: light-dark(#ffb800, #ffe07a);
-  --on-accent: #24123f;
-  --accent-text: light-dark(#7a4f00, #ffd23e);
+  --accent: light-dark(#ffd23e, #ffd23e);
+  --accent-hover: light-dark(#ffc400, #ffe07a);
+  --on-accent: #1f2340;
+  --accent-text: light-dark(#7a5600, #ffd23e);
 
-  /* The single gradient on the board: the question card, the Question hero. */
-  --hero-from: light-dark(#6a3de8, #1d0b45);
-  --hero-to: light-dark(#c0307f, #3a0b52);
-  --on-hero: #ffffff;
+  /* The question card, the Question hero: a plain white box in light, the
+     single gradient on the board in dark. */
+  --hero-from: light-dark(#ffffff, #1d0b45);
+  --hero-to: light-dark(#ffffff, #3a0b52);
+  --on-hero: light-dark(#1f2340, #ffffff);
 
   /* Dark: success is the cyan ✓ tube, danger the pink ✗ tube. */
-  --success: light-dark(#18733d, #3ee6ff);
-  --success-hover: light-dark(#125c31, #7aeeff);
+  --success: light-dark(#1d8239, #3ee6ff);
+  --success-hover: light-dark(#197534, #7aeeff);
   --on-success: light-dark(#ffffff, #06222a);
   --success-text: light-dark(#17703c, #3ee6ff);
 
   --warning: light-dark(#ff9f1c, #ff9a3c);
   --warning-hover: light-dark(#f08a00, #ffb36b);
-  --on-warning: #24123f;
+  --on-warning: #1f2340;
   --warning-text: light-dark(#9a4f00, #ff9a3c);
 
   --danger: light-dark(#c0262d, #ff4fd0);
@@ -113,14 +144,6 @@
      backgrounds stay readable on the dark board. */
   --media-backing: light-dark(transparent, #ffffff);
   --sign-script: #ff6ad5;
-
-  /* Light backdrop: the game-show stage. */
-  --stage-wall: #d9ccff;
-  --stage-stripe: #cfbfff;
-  --stage-beam: rgba(255, 255, 255, 0.45);
-  --stage-truss: #24123f;
-  --stage-bulb: #ffd866;
-  --stage-floor: #f3d9a8;
 
   /* Dark backdrop: the synthwave scene. Its sky, sun and floor gradients live
      in the SVG itself. */
@@ -190,30 +213,98 @@ body {
   margin-bottom: 14px;
 }
 
-/* Backdrops (StageBackdrop.vue): the game-show stage in light, the synthwave
+/* Backdrops (StageBackdrop.vue): the pixel day scene in light, the synthwave
    scene in dark; the "Neon glow" block swaps which one shows. */
 .stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .stage-synth { display: none; }
-.stage-wall { fill: var(--stage-wall); }
-.stage-stripe { fill: var(--stage-stripe); }
-.stage-beam { fill: var(--stage-beam); }
-.stage-truss { fill: var(--stage-truss); }
-.stage-bulb { fill: var(--stage-bulb); stroke: var(--stage-truss); stroke-width: 3; }
-.stage-floor { fill: var(--stage-floor); stroke: var(--ink); stroke-width: 4; }
+/* Light backdrop palette (PixelBackdrop.vue). Scenery only, so the colours
+   live here rather than as theme tokens. */
+.px-sky-1 { fill: #3b9ef2; } .px-sky-2 { fill: #52adf5; } .px-sky-3 { fill: #6abdf7; }
+.px-sky-4 { fill: #84cbf9; } .px-sky-5 { fill: #a2dafb; }
+.px-sun-halo { fill: #fff3b0; opacity: 0.45; } .px-sun-rim { fill: #ffc93c; }
+.px-sun { fill: #ffe066; } .px-sun-core { fill: #fffbe0; }
+.px-cloud { fill: #ffffff; } .px-cloud-shade { fill: #dcefff; } .px-cloud-deep { fill: #b4d8f5; }
+.px-bank { fill: #f2faff; } .px-bank-shade { fill: #cfe7f8; }
+.px-hill-far { fill: #8fd3a8; } .px-hill-far-light { fill: #a9e2bb; }
+.px-hill { fill: #4cb84a; } .px-hill-light { fill: #6fd05a; }
+.px-stone { fill: #a4abc0; } .px-stone-dark { fill: #7d859c; } .px-window { fill: #3a3f5c; }
+.px-roof { fill: #e0483d; } .px-roof-dark { fill: #b0322b; } .px-flag { fill: #e8384f; }
+.px-trunk { fill: #8a5a2b; } .px-tree { fill: #2f9e44; } .px-tree-light { fill: #52c05a; } .px-tree-dark { fill: #23803a; }
+.px-dirt { fill: #c98a4b; } .px-dirt-light { fill: #e0a768; } .px-dirt-dark { fill: #9a6232; }
+.px-grass { fill: #4cbf3a; } .px-grass-light { fill: #7fdc55; } .px-ink { fill: #1f2340; }
+.px-gold { fill: #f5b52e; } .px-gold-light { fill: #ffe08a; } .px-gold-dark { fill: #c7801a; }
+.px-cap { fill: #e03b3b; } .px-cap-dark { fill: #b52a2a; } .px-spot { fill: #ffffff; } .px-stem { fill: #f6e6c8; }
+.px-slime { fill: #5ccf4a; } .px-slime-dark { fill: #2e8f3a; } .px-slime-light { fill: #b9f59a; }
+.px-coin, .px-slime { transform-box: fill-box; }
+.px-coin { transform-origin: center; }
+.px-slime { transform-origin: 50% 100%; }
+
+/* Coin that pops out of the ✓ medallion on a correct reveal (light only, and
+   only with motion on; see the "Pixel arcade" motion rules). */
+.coin-pop {
+  display: none;
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  margin-left: -14px;
+  width: 28px;
+  height: 36px;
+  background: #f5b52e;
+  border: 4px solid #c7801a;
+  box-shadow: inset 4px 0 0 #ffe08a, inset -6px 0 0 #c7801a;
+  opacity: 0;
+}
+.medallion { z-index: 1; }
 
 .stage-star { fill: var(--stage-star); opacity: 0.7; }
+.sky-grid line { stroke: #ff5ad8; stroke-width: 1.5; opacity: 0.2; }
+.neon-sparkle { opacity: 0.9; }
 .skyline-far { fill: var(--stage-skyline-far); opacity: 0.85; }
-.skyline-near { fill: var(--stage-skyline); stroke: var(--stage-rooftop); stroke-width: 1.5; stroke-opacity: 0.6; stroke-linejoin: round; }
-.skyline-window { opacity: 0.85; }
+.far-window { fill: #b98aff; opacity: 0.35; }
+.mountain { fill: #160634; stroke: #ff4fd0; stroke-width: 2; stroke-linejoin: round; }
+.mountain-facet { fill: none; stroke: #7b5cff; stroke-width: 1.5; opacity: 0.6; }
+/* Corner-on mid towers; outline colour comes from each group's stroke. */
+.mid-lit { fill: #26105a; stroke: none; }
+.mid-shade { fill: #0e0526; stroke: none; }
+.mid-outline { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.mid-corner { fill: none; stroke-width: 1.5; opacity: 0.75; }
+.skyline-window { opacity: 0.85; stroke: none; }
+.skyline-window.shade { opacity: 0.45; }
+.neon-strip { opacity: 0.8; }
+.neon-sign { font-family: var(--font-neon); font-size: 30px; letter-spacing: 2px; }
 .beacon { fill: var(--stage-beacon); }
-.bird { fill: var(--stage-skyline); }
-.bird-flight { transform: translateX(-120px); }
+.car-body { fill: #1a0d3a; stroke: #ff4fd0; stroke-width: 2; stroke-linejoin: round; }
+.car-glow, .car-window { fill: #3ee6ff; }
+.car-flight { transform: translateX(-200px); }
+.shooting-star { stroke-width: 3; stroke-linecap: round; opacity: 0; }
+.tower-cyan { --tower: #3ee6ff; --tower-sign: #ff4fd0; }
+.tower-pink { --tower: #ff4fd0; --tower-sign: #3ee6ff; }
+.tower-front { fill: #120a2e; }
+.tower-side { fill: #08041a; }
+.tower-dots { opacity: 0.08; }
+.tower-ledge { fill: var(--tower); opacity: 0.5; }
+.tower-pane { fill: var(--tower); }
+.tower-pane.pane-lit { opacity: 0.85; }
+.tower-pane.pane-dim { opacity: 0.28; }
+.tower-pane.pane-dark { fill: #0b0620; stroke: var(--tower); stroke-width: 1.5; stroke-opacity: 0.6; }
+.tower-cornice { fill: var(--tower); opacity: 0.9; }
+.tower-edge { fill: none; stroke: var(--tower); stroke-width: 2.5; stroke-linejoin: miter; filter: drop-shadow(0 0 4px var(--tower)); }
+.tower-curb { fill: #1a0d3a; }
+.tower-sign-box { fill: #0b0620; stroke: var(--tower-sign); stroke-width: 2; }
+.tower .neon-sign { fill: var(--tower-sign); font-size: 22px; }
+.palm-pool { fill: #ff4fd0; opacity: 0.22; }
+.palm-trunk { fill: #0f4c5c; stroke: #3ee6ff; stroke-width: 1; }
+.palm-trunk-shade { fill: #0a3540; }
+.palm-leaf { fill: #0d5a4f; stroke: #3ee6ff; stroke-width: 1.5; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(62, 230, 255, 0.6)); }
+.palm-leaf-back { fill: #072b31; stroke: #1fa3b8; }
+.palm-rib { fill: none; stroke: #8ff3ff; stroke-width: 1; opacity: 0.55; }
+.palm-nut { fill: #ff8a3d; }
 .stage-grid line { stroke-width: 2; stroke-opacity: 0.7; }
 .stage-horizon { stroke: var(--stage-horizon); stroke-width: 3; }
 .stage-horizon-glow { stroke: var(--stage-horizon); stroke-width: 14; opacity: 0.8; }
 
-/* Title plaque straddling the board's top edge. Light: a purple game-show
-   plaque. Dark: a lit neon sign (see the "Neon glow" block). */
+/* Title plaque straddling the board's top edge. Light: an arcade-blue
+   pixel sign. Dark: a lit neon sign (see the "Neon glow" block). */
 .plaque {
   position: absolute;
   top: -27px;
@@ -223,8 +314,8 @@ body {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  background: var(--hero-from);
-  color: var(--on-hero);
+  background: var(--control);
+  color: var(--on-control);
   border: 3px solid var(--ink);
   border-radius: 18px;
   box-shadow: 0 5px 0 var(--shadow);
@@ -234,6 +325,7 @@ body {
   letter-spacing: 2px;
   text-transform: uppercase;
 }
+.app-icon { width: 1.4em; height: 1.4em; align-self: center; }
 
 .title {
   text-align: center;
@@ -302,7 +394,7 @@ body {
   letter-spacing: 0.5px;
   cursor: pointer;
   font-family: inherit;
-  box-shadow: 0 4px 0 var(--shadow);
+  box-shadow: inset 0 -4px 0 var(--bevel-low), inset 0 3px 0 var(--bevel-high), 0 4px 0 var(--shadow);
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn kbd { margin-left: 6px; vertical-align: 2px; }
@@ -419,7 +511,7 @@ body {
 .form-row input:focus-visible,
 .form-row select:focus-visible,
 .name-input:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; border-color: var(--ink); }
-.form-row input:disabled { background: var(--bg); color: var(--text-muted); }
+.form-row input:disabled { background: var(--disabled-bg); color: var(--text-muted); }
 input[type='checkbox'], input[type='radio'] { accent-color: var(--control); width: 18px; height: 18px; }
 
 .checks {
@@ -478,6 +570,7 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
 .panel.builder { max-width: 1480px; padding-top: 28px; }
 .builder-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
 .builder-head .title { margin: 0; }
+.builder-head-actions { display: flex; align-items: center; gap: 8px; }
 .builder-notice { margin: 0 0 10px; }
 .builder-grid { display: grid; grid-template-columns: 240px 1fr; gap: 18px; align-items: start; }
 .builder-grid.has-editor { grid-template-columns: 240px minmax(0, 1fr) minmax(0, 1fr); }
@@ -549,6 +642,12 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
 .q-text { display: block; font-size: 15px; font-weight: 600; }
 .q-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 .q-answer { color: var(--success-text); font-weight: 600; }
+.q-answer-hidden { font-style: italic; }
+.answers-toggle { margin-left: auto; }
+.q-new { padding: 0 8px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 12px; font-weight: 700; }
+.q-by { font-style: italic; }
+.written-by { margin: 8px 0 0; text-align: center; font-size: 20px; color: var(--text-muted); }
+.written-by strong { color: var(--text); }
 .q-move { display: flex; gap: 2px; }
 
 .cat-tag {
@@ -651,15 +750,15 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
   font-size: 22px;
   font-weight: 500;
   text-align: left;
-  color: var(--text);
-  background: var(--surface);
+  color: var(--on-option);
+  background: var(--option-bg);
   border: 3px solid var(--ink);
   border-radius: 999px;
   padding: 8px 20px 8px 8px;
-  box-shadow: 0 5px 0 var(--shadow);
+  box-shadow: inset 0 -5px 0 var(--bevel-low), inset 0 3px 0 var(--bevel-high), 0 5px 0 var(--shadow);
   cursor: pointer;
 }
-.option:hover:not(.not-selectable) { background: var(--hover-tint); }
+.option:hover:not(.not-selectable) { background: var(--option-hover); }
 .option:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .option.selected { background: var(--accent); color: var(--on-accent); }
 .option.not-selectable { cursor: default; }
@@ -823,11 +922,11 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
 .answer-body { font-size: 22px; font-weight: 600; margin: 14px 0; line-height: 1.4; }
 .answer-body.explanation { font-size: 18px; font-weight: 400; color: var(--text-muted); margin-top: 0; }
 .answer-options { margin-top: 18px; }
-.answer-options .option { font-size: 19px; box-shadow: 0 4px 0 var(--shadow); }
+.answer-options .option { font-size: 19px; box-shadow: inset 0 -4px 0 var(--bevel-low), inset 0 3px 0 var(--bevel-high), 0 4px 0 var(--shadow); }
 .answer-options .option.correct { background: var(--success); color: var(--on-success); font-weight: 700; }
 .answer-options .option.chosen-wrong { background: var(--danger-tint); color: var(--danger); }
 .answer-options .option.chosen-wrong .option-text { text-decoration: line-through; }
-.answer-options .option.dimmed { color: var(--text-muted); box-shadow: none; }
+.answer-options .option.dimmed { background: var(--surface); color: var(--text-muted); box-shadow: none; }
 .answer-options .option.dimmed .badge { background: var(--surface); color: var(--text-muted); }
 .award-line.locked { color: var(--danger); font-weight: 700; }
 
@@ -1160,26 +1259,39 @@ kbd {
 
 
 
-/* Neon glow: dark theme only. Glows are static box/text shadows; nothing
-   here animates. Emitted twice: once for the OS preference, once for the
+/* Pixel arcade: light theme only. Puts the pixel font on headings and
+   squares off the rounded corners. Emitted twice, like the neon block: once
+   for the OS preference, once for the toolbar's explicit Light choice. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) :is(.plaque, .title, .stamp-label, .help-title, .graveyard-title, .phone-title) { font-family: var(--font-pixel); }
+  :root:not([data-theme="dark"]) :is(.panel, .help-card, .q-card, .phone-card, .cat-list) { border-radius: 8px; }
+  :root:not([data-theme="dark"]) :is(.btn, .tool-btn, .tool-val, .end-game-btn, .option, .badge, .plaque, .timer, .answer-banner, .answer-label, .stamp, .medallion, .category-chip, .leader-tag, .streak, .player-card, .podium-num, .cat-tag, .title-chip, .pl-item, .q-row, .hint-bubble, .phone-team-tag, .phone-team-btn, .phone-verdict, input, select, textarea) { border-radius: 4px; }
+  :root:not([data-theme="dark"]) :is(.progress-track, .timer-track) { border-radius: 0; }
+}
+:root[data-theme="light"] :is(.plaque, .title, .stamp-label, .help-title, .graveyard-title, .phone-title) { font-family: var(--font-pixel); }
+:root[data-theme="light"] :is(.panel, .help-card, .q-card, .phone-card, .cat-list) { border-radius: 8px; }
+:root[data-theme="light"] :is(.btn, .tool-btn, .tool-val, .end-game-btn, .option, .badge, .plaque, .timer, .answer-banner, .answer-label, .stamp, .medallion, .category-chip, .leader-tag, .streak, .player-card, .podium-num, .cat-tag, .title-chip, .pl-item, .q-row, .hint-bubble, .phone-team-tag, .phone-team-btn, .phone-verdict, input, select, textarea) { border-radius: 4px; }
+:root[data-theme="light"] :is(.progress-track, .timer-track) { border-radius: 0; }
+
+/* Neon glow: dark theme only. Glows are static box shadows on outlines;
+   text stays crisp (only the plaque sign keeps a soft halo). Nothing here
+   animates. Emitted twice: once for the OS preference, once for the
    toolbar's explicit Dark choice. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) body { background: var(--bg); }
   :root:not([data-theme="light"]) .stage-stage { display: none; }
   :root:not([data-theme="light"]) .stage-synth { display: block; }
   :root:not([data-theme="light"]) .plaque { background: var(--sign-board); border-color: #f3ecff; box-shadow: 0 0 6px var(--tube-halo), 0 0 18px var(--tube-halo); padding: 4px 26px 8px; top: -34px; gap: 10px; text-transform: none; letter-spacing: 0; }
-  :root:not([data-theme="light"]) .plaque-main { font-family: 'Monoton', var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 6px rgba(255, 210, 62, 0.8), 0 0 18px rgba(255, 160, 40, 0.6); }
-  :root:not([data-theme="light"]) .plaque-script { font-family: 'Yellowtail', cursive; font-weight: 400; font-size: 34px; color: var(--sign-script); text-shadow: 0 0 6px rgba(255, 106, 213, 0.8), 0 0 18px rgba(255, 79, 208, 0.6); }
+  :root:not([data-theme="light"]) .plaque-main { font-family: 'Monoton', var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px rgba(255, 160, 40, 0.45); }
+  :root:not([data-theme="light"]) .plaque-script { font-family: 'Yellowtail', cursive; font-weight: 400; font-size: 34px; color: var(--sign-script); text-shadow: 0 0 14px rgba(255, 79, 208, 0.45); }
   :root:not([data-theme="light"]) .title { font-family: var(--font-neon); font-size: 44px; font-weight: 400; }
   :root:not([data-theme="light"]) .qtext { font-family: var(--font-neon); font-size: 32px; font-weight: 400; }
   :root:not([data-theme="light"]) .grave { box-shadow: 0 0 8px var(--tube-halo), 0 0 22px rgba(176, 120, 255, 0.35); }
   :root:not([data-theme="light"]) .crown { filter: drop-shadow(0 0 10px rgba(255, 210, 62, 0.8)); }
   :root:not([data-theme="light"]) .panel { box-shadow: 0 0 6px var(--tube-halo), 0 0 26px var(--tube-halo), inset 0 0 18px rgba(176, 120, 255, 0.18); }
-  :root:not([data-theme="light"]) .title, :root:not([data-theme="light"]) .winner { text-shadow: 0 0 8px rgba(246, 241, 255, 0.55), 0 0 22px var(--tube-halo); }
   :root:not([data-theme="light"]) .q-card { box-shadow: 0 0 6px var(--tube-halo), 0 0 24px rgba(255, 79, 208, 0.35); }
-  :root:not([data-theme="light"]) .qtext { text-shadow: 0 0 10px rgba(246, 241, 255, 0.45); }
   :root:not([data-theme="light"]) .btn, :root:not([data-theme="light"]) .badge, :root:not([data-theme="light"]) .medallion, :root:not([data-theme="light"]) .answer-banner, :root:not([data-theme="light"]) .timer { box-shadow: 0 0 6px currentColor, inset 0 0 6px rgba(255, 255, 255, 0.06); }
-  :root:not([data-theme="light"]) .btn { background: var(--panel); border-color: currentColor; text-shadow: 0 0 8px currentColor; }
+  :root:not([data-theme="light"]) .btn { background: var(--panel); border-color: currentColor; }
   :root:not([data-theme="light"]) .btn:active:not(:disabled) { box-shadow: 0 0 3px currentColor; }
   :root:not([data-theme="light"]) .btn-yellow { color: var(--accent); }
   :root:not([data-theme="light"]) .btn-yellow:hover { background: var(--hover-tint); }
@@ -1191,24 +1303,22 @@ kbd {
   :root:not([data-theme="light"]) .option { color: var(--text); box-shadow: 0 0 6px var(--tube-halo); }
   :root:not([data-theme="light"]) .option:hover:not(.not-selectable) { box-shadow: 0 0 10px var(--tube-halo), 0 0 22px var(--tube-halo); }
   :root:not([data-theme="light"]) .option.selected { background: var(--hover-tint); color: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(255, 210, 62, 0.8), 0 0 22px rgba(255, 160, 40, 0.45); }
-  :root:not([data-theme="light"]) .badge { background: var(--panel); color: var(--accent); border-color: var(--accent); text-shadow: 0 0 6px currentColor; }
-  :root:not([data-theme="light"]) .option.selected .badge { background: var(--accent); color: var(--on-accent); text-shadow: none; }
-  :root:not([data-theme="light"]) .medallion { background: var(--panel); color: var(--accent); border-color: currentColor; text-shadow: 0 0 8px currentColor; }
+  :root:not([data-theme="light"]) .badge { background: var(--panel); color: var(--accent); border-color: var(--accent); }
+  :root:not([data-theme="light"]) .option.selected .badge { background: var(--accent); color: var(--on-accent); }
+  :root:not([data-theme="light"]) .medallion { background: var(--panel); color: var(--accent); border-color: currentColor; }
   :root:not([data-theme="light"]) .medallion.medal-correct { background: var(--panel); color: var(--success); }
   :root:not([data-theme="light"]) .medallion.medal-wrong { background: var(--panel); color: var(--danger); }
-  :root:not([data-theme="light"]) .stamp { box-shadow: 0 0 10px currentColor, inset 0 0 10px currentColor; text-shadow: 0 0 8px currentColor; }
+  :root:not([data-theme="light"]) .stamp { box-shadow: 0 0 10px currentColor, inset 0 0 10px currentColor; }
   :root:not([data-theme="light"]) .answer-banner { background: var(--panel); color: var(--accent); border-color: var(--accent); }
-  :root:not([data-theme="light"]) .answer-text { text-shadow: 0 0 10px rgba(255, 210, 62, 0.7); }
   :root:not([data-theme="light"]) .answer-label { background: var(--accent); color: var(--on-accent); }
-  :root:not([data-theme="light"]) .answer-options .option.correct { background: var(--panel); color: var(--success); border-color: var(--success); box-shadow: 0 0 8px currentColor, 0 0 22px rgba(62, 230, 255, 0.4); text-shadow: 0 0 8px currentColor; }
+  :root:not([data-theme="light"]) .answer-options .option.correct { background: var(--panel); color: var(--success); border-color: var(--success); box-shadow: 0 0 8px currentColor, 0 0 22px rgba(62, 230, 255, 0.4); }
   :root:not([data-theme="light"]) .answer-options .option.correct .badge { color: var(--success); border-color: var(--success); }
   :root:not([data-theme="light"]) .answer-options .option.chosen-wrong { border-color: var(--danger); box-shadow: 0 0 8px rgba(255, 79, 208, 0.7); }
   :root:not([data-theme="light"]) .answer-options .option.dimmed { box-shadow: none; border-color: var(--border); }
-  :root:not([data-theme="light"]) .answer-options .option.dimmed .badge { color: var(--text-muted); border-color: var(--border); box-shadow: none; text-shadow: none; }
+  :root:not([data-theme="light"]) .answer-options .option.dimmed .badge { color: var(--text-muted); border-color: var(--border); box-shadow: none; }
   :root:not([data-theme="light"]) .answer-options .option.chosen-wrong .badge { color: var(--danger); border-color: var(--danger); }
   :root:not([data-theme="light"]) .player-card.active { box-shadow: 0 0 10px rgba(255, 210, 62, 0.6); }
   :root:not([data-theme="light"]) .podium-body { box-shadow: 0 0 10px var(--tube-halo); }
-  :root:not([data-theme="light"]) .led { text-shadow: 0 0 8px rgba(125, 255, 138, 0.8); }
   :root:not([data-theme="light"]) .streak { box-shadow: 0 0 8px rgba(255, 154, 60, 0.7); }
   :root:not([data-theme="light"]) .room-title { box-shadow: 0 0 10px rgba(255, 210, 62, 0.7); }
 }
@@ -1216,18 +1326,16 @@ kbd {
 :root[data-theme="dark"] .stage-stage { display: none; }
 :root[data-theme="dark"] .stage-synth { display: block; }
 :root[data-theme="dark"] .plaque { background: var(--sign-board); border-color: #f3ecff; box-shadow: 0 0 6px var(--tube-halo), 0 0 18px var(--tube-halo); padding: 4px 26px 8px; top: -34px; gap: 10px; text-transform: none; letter-spacing: 0; }
-:root[data-theme="dark"] .plaque-main { font-family: 'Monoton', var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 6px rgba(255, 210, 62, 0.8), 0 0 18px rgba(255, 160, 40, 0.6); }
-:root[data-theme="dark"] .plaque-script { font-family: 'Yellowtail', cursive; font-weight: 400; font-size: 34px; color: var(--sign-script); text-shadow: 0 0 6px rgba(255, 106, 213, 0.8), 0 0 18px rgba(255, 79, 208, 0.6); }
+:root[data-theme="dark"] .plaque-main { font-family: 'Monoton', var(--font-display); font-weight: 400; font-size: 34px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); text-shadow: 0 0 14px rgba(255, 160, 40, 0.45); }
+:root[data-theme="dark"] .plaque-script { font-family: 'Yellowtail', cursive; font-weight: 400; font-size: 34px; color: var(--sign-script); text-shadow: 0 0 14px rgba(255, 79, 208, 0.45); }
 :root[data-theme="dark"] .title { font-family: var(--font-neon); font-size: 44px; font-weight: 400; }
 :root[data-theme="dark"] .qtext { font-family: var(--font-neon); font-size: 32px; font-weight: 400; }
 :root[data-theme="dark"] .grave { box-shadow: 0 0 8px var(--tube-halo), 0 0 22px rgba(176, 120, 255, 0.35); }
 :root[data-theme="dark"] .crown { filter: drop-shadow(0 0 10px rgba(255, 210, 62, 0.8)); }
 :root[data-theme="dark"] .panel { box-shadow: 0 0 6px var(--tube-halo), 0 0 26px var(--tube-halo), inset 0 0 18px rgba(176, 120, 255, 0.18); }
-:root[data-theme="dark"] .title, :root[data-theme="dark"] .winner { text-shadow: 0 0 8px rgba(246, 241, 255, 0.55), 0 0 22px var(--tube-halo); }
 :root[data-theme="dark"] .q-card { box-shadow: 0 0 6px var(--tube-halo), 0 0 24px rgba(255, 79, 208, 0.35); }
-:root[data-theme="dark"] .qtext { text-shadow: 0 0 10px rgba(246, 241, 255, 0.45); }
 :root[data-theme="dark"] .btn, :root[data-theme="dark"] .badge, :root[data-theme="dark"] .medallion, :root[data-theme="dark"] .answer-banner, :root[data-theme="dark"] .timer { box-shadow: 0 0 6px currentColor, inset 0 0 6px rgba(255, 255, 255, 0.06); }
-:root[data-theme="dark"] .btn { background: var(--panel); border-color: currentColor; text-shadow: 0 0 8px currentColor; }
+:root[data-theme="dark"] .btn { background: var(--panel); border-color: currentColor; }
 :root[data-theme="dark"] .btn:active:not(:disabled) { box-shadow: 0 0 3px currentColor; }
 :root[data-theme="dark"] .btn-yellow { color: var(--accent); }
 :root[data-theme="dark"] .btn-yellow:hover { background: var(--hover-tint); }
@@ -1239,24 +1347,22 @@ kbd {
 :root[data-theme="dark"] .option { color: var(--text); box-shadow: 0 0 6px var(--tube-halo); }
 :root[data-theme="dark"] .option:hover:not(.not-selectable) { box-shadow: 0 0 10px var(--tube-halo), 0 0 22px var(--tube-halo); }
 :root[data-theme="dark"] .option.selected { background: var(--hover-tint); color: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(255, 210, 62, 0.8), 0 0 22px rgba(255, 160, 40, 0.45); }
-:root[data-theme="dark"] .badge { background: var(--panel); color: var(--accent); border-color: var(--accent); text-shadow: 0 0 6px currentColor; }
-:root[data-theme="dark"] .option.selected .badge { background: var(--accent); color: var(--on-accent); text-shadow: none; }
-:root[data-theme="dark"] .medallion { background: var(--panel); color: var(--accent); border-color: currentColor; text-shadow: 0 0 8px currentColor; }
+:root[data-theme="dark"] .badge { background: var(--panel); color: var(--accent); border-color: var(--accent); }
+:root[data-theme="dark"] .option.selected .badge { background: var(--accent); color: var(--on-accent); }
+:root[data-theme="dark"] .medallion { background: var(--panel); color: var(--accent); border-color: currentColor; }
 :root[data-theme="dark"] .medallion.medal-correct { background: var(--panel); color: var(--success); }
 :root[data-theme="dark"] .medallion.medal-wrong { background: var(--panel); color: var(--danger); }
-:root[data-theme="dark"] .stamp { box-shadow: 0 0 10px currentColor, inset 0 0 10px currentColor; text-shadow: 0 0 8px currentColor; }
+:root[data-theme="dark"] .stamp { box-shadow: 0 0 10px currentColor, inset 0 0 10px currentColor; }
 :root[data-theme="dark"] .answer-banner { background: var(--panel); color: var(--accent); border-color: var(--accent); }
-:root[data-theme="dark"] .answer-text { text-shadow: 0 0 10px rgba(255, 210, 62, 0.7); }
 :root[data-theme="dark"] .answer-label { background: var(--accent); color: var(--on-accent); }
-:root[data-theme="dark"] .answer-options .option.correct { background: var(--panel); color: var(--success); border-color: var(--success); box-shadow: 0 0 8px currentColor, 0 0 22px rgba(62, 230, 255, 0.4); text-shadow: 0 0 8px currentColor; }
+:root[data-theme="dark"] .answer-options .option.correct { background: var(--panel); color: var(--success); border-color: var(--success); box-shadow: 0 0 8px currentColor, 0 0 22px rgba(62, 230, 255, 0.4); }
 :root[data-theme="dark"] .answer-options .option.correct .badge { color: var(--success); border-color: var(--success); }
 :root[data-theme="dark"] .answer-options .option.chosen-wrong { border-color: var(--danger); box-shadow: 0 0 8px rgba(255, 79, 208, 0.7); }
 :root[data-theme="dark"] .answer-options .option.dimmed { box-shadow: none; border-color: var(--border); }
-:root[data-theme="dark"] .answer-options .option.dimmed .badge { color: var(--text-muted); border-color: var(--border); box-shadow: none; text-shadow: none; }
+:root[data-theme="dark"] .answer-options .option.dimmed .badge { color: var(--text-muted); border-color: var(--border); box-shadow: none; }
 :root[data-theme="dark"] .answer-options .option.chosen-wrong .badge { color: var(--danger); border-color: var(--danger); }
 :root[data-theme="dark"] .player-card.active { box-shadow: 0 0 10px rgba(255, 210, 62, 0.6); }
 :root[data-theme="dark"] .podium-body { box-shadow: 0 0 10px var(--tube-halo); }
-:root[data-theme="dark"] .led { text-shadow: 0 0 8px rgba(125, 255, 138, 0.8); }
 :root[data-theme="dark"] .streak { box-shadow: 0 0 8px rgba(255, 154, 60, 0.7); }
 :root[data-theme="dark"] .room-title { box-shadow: 0 0 10px rgba(255, 210, 62, 0.7); }
 
@@ -1284,12 +1390,13 @@ kbd {
 @keyframes window-flicker { 50% { opacity: 0.08; } }
 @keyframes beacon-blink { 0%, 60% { opacity: 1; } 70%, 100% { opacity: 0.15; } }
 @keyframes star-twinkle { 50% { opacity: 0.15; } }
-@keyframes bird-fly {
-  0% { transform: translate(-120px, 0); }
-  50% { transform: translate(800px, -24px); }
-  100% { transform: translate(1720px, 8px); }
-}
-@keyframes bird-flap { to { transform: scaleY(0.3); } }
+@keyframes car-fly { from { transform: translateX(-200px); } to { transform: translateX(1800px); } }
+@keyframes car-fly-back { from { transform: translateX(1800px); } to { transform: translateX(-200px); } }
+@keyframes grid-roll { from { opacity: 0; transform: translateY(var(--from)); } 15% { opacity: 1; } to { transform: translateY(var(--to)); } }
+@keyframes sun-bands { to { transform: translateY(24px); } }
+@keyframes sign-flicker { 0%, 86%, 100% { opacity: 1; } 88% { opacity: 0.2; } 90% { opacity: 1; } 93% { opacity: 0.3; } }
+@keyframes strip-pulse { from { opacity: 0.35; } }
+@keyframes shoot { 0%, 90% { opacity: 0; transform: none; } 92% { opacity: 1; } 100% { opacity: 0; transform: translate(480px, 160px); } }
 @keyframes crown-drop { from { opacity: 0; transform: translateY(-90px) rotate(-25deg) scale(1.4); } }
 @keyframes crown-float { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-10px) rotate(4deg); } }
 @keyframes grave-rise { from { opacity: 0; transform: translateY(60px) rotate(0deg); } }
@@ -1297,6 +1404,26 @@ kbd {
 @keyframes flicker-on { 0% { opacity: 0; } 20% { opacity: 1; } 30% { opacity: 0.2; } 55% { opacity: 1; } 65% { opacity: 0.4; } 100% { opacity: 1; } }
 @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
 @keyframes pulse { 40% { transform: scale(1.04); } }
+@keyframes px-drift { from { transform: translateX(var(--from)); } to { transform: translateX(var(--to)); } }
+@keyframes px-coin-spin { 0% { transform: scaleX(1); } 25% { transform: scaleX(0.6); } 50% { transform: scaleX(0.15); } 75% { transform: scaleX(0.6); } }
+@keyframes px-twinkle { 50% { opacity: 0; } }
+@keyframes px-hop {
+  0%, 70%, 100% { transform: none; }
+  74% { transform: scale(1.15, 0.8); }
+  80% { transform: translateY(-36px) scale(0.9, 1.1); }
+  86% { transform: translateY(-44px); }
+  92% { transform: scale(1.15, 0.85); }
+}
+@keyframes px-bump { 40% { transform: translateY(-12px); } }
+@keyframes px-drop { from { opacity: 0; transform: translateY(-40px); } }
+@keyframes px-coin-pop {
+  0% { opacity: 0; transform: translateY(0) scaleX(1); }
+  15% { opacity: 1; }
+  30% { transform: translateY(-50px) scaleX(0.2); }
+  50% { transform: translateY(-80px) scaleX(1); }
+  70% { opacity: 1; transform: translateY(-70px) scaleX(0.2); }
+  100% { opacity: 0; transform: translateY(-40px) scaleX(1); }
+}
 .stamp { animation: hero-fade var(--dur-hero) var(--ease-out) both; }
 .hero-card { animation: hero-fade 400ms var(--ease-out) both; }
 .hero-item, .reveal-hero {
@@ -1340,9 +1467,41 @@ kbd {
   .skyline-window.flicker { animation: window-flicker 4s steps(2) infinite; }
   .beacon { animation: beacon-blink 2.4s ease-in-out infinite; }
   .stage-star.twinkle { animation: star-twinkle 4s ease-in-out infinite; }
-  .bird-flight { animation: bird-fly 30s linear infinite; }
-  .bird { transform-box: fill-box; transform-origin: center; animation: bird-flap 0.4s ease-in-out infinite alternate; }
+  .car-flight { animation: car-fly linear infinite; }
+  .car-flight.car-reverse { animation-name: car-fly-back; }
+  .grid-row { animation: grid-roll 4.5s cubic-bezier(0.55, 0, 1, 0.45) infinite; }
+  .sun-bands { animation: sun-bands 3s linear infinite; }
+  .neon-sign { animation: sign-flicker 7s steps(1, end) infinite; }
+  .tower-pane.flicker { animation: window-flicker 5s steps(2) infinite; }
+  .neon-strip.pulse { animation: strip-pulse 2.6s ease-in-out infinite alternate; }
+  .neon-sparkle { animation: star-twinkle 3s steps(2, end) infinite; }
+  .shooting-star { animation: shoot 11s linear infinite; }
   .answer-options .option.correct { animation: pulse 450ms var(--ease-out) 300ms; }
+
+  /* Pixel arcade motion, light only (see inventory): frame-stepped timing,
+     a block bump on the picked option and ✓ medallion, a coin pop. */
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) :is(.hero-card, .hero-item, .reveal-hero, .q-card.shake) { animation-timing-function: steps(4, end); }
+    :root:not([data-theme="dark"]) .hero-card { animation-name: px-drop; }
+    :root:not([data-theme="dark"]) .stamp { animation-timing-function: steps(4, end); }
+    :root:not([data-theme="dark"]) .medallion.medal-correct { animation: px-bump 300ms steps(3, end) 150ms both; }
+    :root:not([data-theme="dark"]) .coin-pop { display: block; animation: px-coin-pop 800ms steps(8, end) 200ms both; }
+    :root:not([data-theme="dark"]) .option.selected { animation: px-bump 240ms steps(3, end); }
+    :root:not([data-theme="dark"]) :is(.btn, .option, .tool-btn) { transition-timing-function: steps(2, end); }
+  }
+  :root[data-theme="light"] :is(.hero-card, .hero-item, .reveal-hero, .q-card.shake) { animation-timing-function: steps(4, end); }
+  :root[data-theme="light"] .hero-card { animation-name: px-drop; }
+  :root[data-theme="light"] .stamp { animation-timing-function: steps(4, end); }
+  :root[data-theme="light"] .medallion.medal-correct { animation: px-bump 300ms steps(3, end) 150ms both; }
+  :root[data-theme="light"] .coin-pop { display: block; animation: px-coin-pop 800ms steps(8, end) 200ms both; }
+  :root[data-theme="light"] .option.selected { animation: px-bump 240ms steps(3, end); }
+  :root[data-theme="light"] :is(.btn, .option, .tool-btn) { transition-timing-function: steps(2, end); }
+
+  /* Light backdrop ambient loops (see inventory). */
+  .px-cloud-drift { animation: px-drift linear infinite; }
+  .px-coin { animation: px-coin-spin 1.2s steps(1, end) infinite; }
+  .px-sparkle { animation: px-twinkle 1.4s steps(1, end) infinite; }
+  .px-slime { animation: px-hop 3.2s steps(3, end) infinite; }
 
   .btn, .option, .counter button, .tool-btn {
     transition-property: background-color, color, border-color, transform;
@@ -1352,7 +1511,7 @@ kbd {
   /* Hover highlight: selectable pills lift toward the viewer. */
   .option:not(.not-selectable):hover { transform: translateY(-3px); }
   /* Press: sink into the sticker shadow. */
-  .option:not(.not-selectable):active { transform: translateY(3px); box-shadow: 0 2px 0 var(--shadow); }
-  .btn:active:not(:disabled) { transform: translateY(2px) scale(0.97); box-shadow: 0 2px 0 var(--shadow); }
+  .option:not(.not-selectable):active { transform: translateY(3px); box-shadow: inset 0 -5px 0 var(--bevel-low), inset 0 3px 0 var(--bevel-high), 0 2px 0 var(--shadow); }
+  .btn:active:not(:disabled) { transform: translateY(2px) scale(0.97); box-shadow: inset 0 -4px 0 var(--bevel-low), inset 0 3px 0 var(--bevel-high), 0 2px 0 var(--shadow); }
   .counter button:active:not(:disabled), .tool-btn:active:not(:disabled) { transform: scale(0.97); }
 }

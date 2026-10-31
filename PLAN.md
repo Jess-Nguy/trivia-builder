@@ -122,7 +122,7 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 **Tasks**
 - Edge cases: empty `/import`, malformed CSV, requesting more questions than exist (already clamped), media URL that fails to load.
 - Basic styling to match the wireframe layout (cards, big readable question text for couch viewing).
-- Two themes: game-show stage (light) and neon game night (dark), with colour tokens, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
+- Two themes: pixel arcade (light) and neon game night (dark), with colour tokens, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
 - Couch-play aids: toolbar (text size, theme, `?` shortcut list, fullscreen), letter keys, question progress, timer bar, leader tag, ranked final scores, timer pause; stage backdrop, title plaque, and contestant podiums on Scoreboard and Final Scores.
 - README: how to drop a CSV in `/import`, the required columns, and `npm run dev`.
 - Confirm the Definition of Done checklist in SCOPE.md.
@@ -177,7 +177,7 @@ See SCOPE §4 Feature 28.
 **Tasks**
 - **Bank + playlists backend** (`server/library.js`): `data/questions.json` and `data/playlists.json`, atomic writes, `normalizeQuestion` validation that mirrors `parseCsv`, playlist membership by question id, CSV import with dedupe, playlist CSV export.
 - **API** (`server/apiHandler.js`): `GET /api/library`; `POST/PUT/DELETE /api/library/questions[/:id]`; `POST/GET/PUT/DELETE /api/library/playlists[/:id]`, `POST …/:id/add`, `GET …/:id/csv`; `POST /api/library/import`.
-- **Builder screen** (`Builder.vue`, `QuestionEditor.vue`, `CategoryPicker.vue`): playlists column, filterable question list with bulk add, type-aware editor.
+- **Builder screen** (`Builder.vue`, `QuestionEditor.vue`, `CategoryPicker.vue`): playlists column, filterable question list with bulk add, type-aware editor. Answers in the list start hidden; **Show all answers** reveals them, and each row's **Show / Hide** button flips just that row.
 - **Game Mode**: playlists in the questions dropdown (value `playlist:<id>`, so CSV names and their played history are unchanged); `store.startGame` keeps order for ordered playlists.
 
 **Tests:** `npm test` (`test/library.test.js`, against the 316-question CSV).
@@ -199,6 +199,41 @@ See SCOPE §4 Feature 29.
 
 **Tests:** `test/game.test.js` (relay), `test/store-phones.test.js` (store).
 **Verify:** `npm run party`, tick phone play, join from two phones on different teams, answer differently, reveal: each phone shows its own verdict; flip one with `1`; NEXT pre-fills the Scoreboard with the question's points for the team marked right.
+
+---
+
+## Phase 13 — Player-written questions (step 1 built)
+
+Players add questions from their phones on topics they know, to stump the rest of the room. Their questions go straight into the bank, tagged so the host can tell them apart, and play in regular games as well as a dedicated mode. Built in four steps; each ships on its own.
+
+**Data model.** Phone submissions are saved to `data/questions.json` with `source: 'public'`, `submittedBy` (the player's nickname), `authorToken` (the phone's player token) and `seenAt: null`. A question without `source` is a host question, so the existing bank needs no migration. `authorToken` is never sent to any phone except its owner.
+
+**Step 1 — Submit from a phone (built; SCOPE §4 Feature 30)**
+- **Nickname**: the phone join screen asks for a nickname (kept in localStorage with the token). The hub stores it on the phone's record.
+- **Submit message**: a `{ t: 'submit', question }` socket message. The hub validates it with `normalizeQuestion` and replies `submitted` or `rejected` with field problems, so the phone form shows the same errors as the Builder. The library API stays loopback-only.
+- **Submission window**: the hub accepts submissions only while the host's phase is `lobby`, `reveal`, `scores` or `final`. During `question` the phone hides the form and keeps the draft, so nothing typed is lost.
+- **Duplicate check**: strict on purpose, since the players are friends and a false rejection costs little. Normalise text (lowercase, strip accents and punctuation, drop filler words like "the", "what", "which", "is") and reject when the normalised question matches an existing one, the content-word overlap (Jaccard) is 0.6 or more, or the answer matches and the overlap is 0.4 or more. The rejection says "Too close to a question already in the bank" without quoting it, so it can't leak bank questions.
+- **Attachments with preview**: the phone form shows the attachment through `Media.vue` as soon as a URL is typed. Submit stays disabled until the preview loads (`load` for images and video, `onReady` for YouTube) and the player ticks "Preview looks right". A preview that errors blocks submission. The server only accepts `http(s)` URLs.
+- **Builder**: an **Unread (N)** badge and a Host / Public / Unread filter. Opening a public question in the editor sets `seenAt`; **Mark all read** clears the badge. Public questions show "by <name>" in the list.
+- **Reveal**: a public question's reveal shows "Written by <name>". The author's phone shows "You wrote this one" instead of the answer buttons.
+
+**Step 2 — My questions and phone playlists**
+- The phone lists its own questions (matched by `authorToken`) and groups them into playlists saved with `source: 'public'` and `createdBy`. Name clashes get the player's name added, e.g. "Pokémon (Sam)".
+
+**Step 3 — Browse the bank (host setting)**
+- Game Mode setting **Phones can browse the question bank**, off by default. The host sends `{ t: 'config', browse, hiddenIds }`; the hub refuses `browse` requests while it's off.
+- Browse results are built on the server and carry only `id`, `question`, `categories`, `type` and `submittedBy`: never `currentAnswer`, `options`, `hint` or `explanation`.
+- `hiddenIds` is the current game's question pool, left out of browse results so players can't look ahead and search for answers.
+- Browsed questions can be added to the player's own playlists.
+
+**Step 4 — Stump the room mode**
+- A Game Mode choice that plays tonight's public questions, rotating between authors.
+- The author's team can't answer its own question. The author's team earns the question's points when at least one team but not every team gets it right; nothing when every team gets it or nobody does. This rewards hard but fair questions over impossible ones.
+
+**Out of this phase:** editing or deleting from the phone after submitting (do it in the Builder), and voting on questions.
+
+**Tests:** `test/game.test.js` for the submit window, nickname, `authorToken` stripping and the browse guard; `test/library.test.js` for the duplicate check and the public fields.
+**Verify:** Join from a phone with a nickname, submit a question in the lobby and see it in the Builder under Unread; submit the same question reworded and see it rejected; start a question and see the form hide with the draft kept; type a broken image URL and see Submit stay disabled; play the public question and see "Written by" on the TV and "You wrote this one" on the author's phone.
 
 ---
 

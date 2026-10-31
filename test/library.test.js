@@ -192,3 +192,108 @@ describe('ordered playlists', () => {
     assert.deepEqual(store.questions.map((q) => q.id), questions.slice(0, 5).map((q) => q.id));
   });
 });
+
+describe('questions written on phones', () => {
+  const AUTHOR = { name: 'Sam', token: 'player-aaaa' };
+  const KOALA = { question: 'What do koalas primarily eat?', currentAnswer: 'Eucalyptus leaves', type: 'Single Choice' };
+
+  test('are saved as public and unread, credited to the phone', () => {
+    const q = lib.submitQuestion(KOALA, AUTHOR);
+    assert.deepEqual(
+      { source: q.source, submittedBy: q.submittedBy, authorToken: q.authorToken, seenAt: q.seenAt },
+      { source: 'public', submittedBy: 'Sam', authorToken: 'player-aaaa', seenAt: null },
+    );
+  });
+
+  test('get the same validation as the builder', () => {
+    assert.throws(() => lib.submitQuestion({ ...KOALA, currentAnswer: '' }, AUTHOR), (e) => e.status === 400);
+  });
+
+  test('keep every category the player picked', () => {
+    const q = lib.submitQuestion({ ...KOALA, categories: ['Animal', 'Geography'] }, AUTHOR);
+    assert.deepEqual(q.categories, ['Animal', 'Geography']);
+  });
+
+  test('reject more than 5 categories', () => {
+    const categories = ['Animal', 'Biology', 'Geography', 'Space', 'Games', 'History'];
+    assert.throws(
+      () => lib.submitQuestion({ ...KOALA, categories }, AUTHOR),
+      (e) => e.problems[0].field === 'categories',
+    );
+  });
+
+  test('cannot attach media to options', () => {
+    const q = lib.submitQuestion(
+      { question: 'Pick the red one', type: 'Multiple Choice', currentAnswer: 'Rose',
+        options: [{ text: 'Rose', attachment: 'https://example.com/a.png' }, { text: 'Daisy' }] },
+      AUTHOR,
+    );
+    assert.equal(q.options[0].attachment, '');
+  });
+
+  test('reject an attachment that is not an http(s) link', () => {
+    assert.throws(
+      () => lib.submitQuestion({ ...KOALA, attachment: 'javascript:alert(1)' }, AUTHOR),
+      (e) => e.problems[0].field === 'attachment',
+    );
+  });
+
+  test('keep their public fields when the host edits them', () => {
+    const q = lib.submitQuestion(KOALA, AUTHOR);
+    const edited = lib.updateQuestion(q.id, { ...q, hint: 'Grey and cuddly' });
+    assert.equal(edited.submittedBy, 'Sam');
+  });
+});
+
+describe('duplicate check', () => {
+  const bank = [{ question: 'What do koalas primarily eat?', currentAnswer: 'Eucalyptus leaves' }];
+  const dupe = (question, currentAnswer = 'Something else') => !!lib.findDuplicate({ question, currentAnswer }, bank);
+
+  test('catches the same question with different case and punctuation', () => {
+    assert.ok(dupe('what do KOALAS primarily eat'));
+  });
+
+  test('catches the same question with accents left off', () => {
+    const accented = [{ question: 'Which Pokémon evolves into Charizard?', currentAnswer: 'Charmeleon' }];
+    assert.ok(lib.findDuplicate({ question: 'Which Pokemon evolves into Charizard?', currentAnswer: 'x' }, accented));
+  });
+
+  test('catches the same question with different filler words', () => {
+    assert.ok(dupe('Koalas primarily eat what?'));
+  });
+
+  test('catches a reworded question with the same answer', () => {
+    assert.ok(dupe('What food do koalas eat?', 'eucalyptus leaves'));
+  });
+
+  test('allows a question on a different subject', () => {
+    assert.ok(!dupe('What do pandas primarily eat?'));
+  });
+
+  test('does not treat a shared TRUE answer as a match', () => {
+    const tf = [{ question: 'Koalas sleep most of the day.', currentAnswer: 'TRUE' }];
+    assert.ok(!lib.findDuplicate({ question: 'Koalas are bears.', currentAnswer: 'TRUE' }, tf));
+  });
+
+  test('a submission matching the bank is rejected with a 409', () => {
+    lib.submitQuestion({ question: 'What do koalas primarily eat?', currentAnswer: 'Leaves', type: 'Single Choice' }, { name: 'A', token: 'player-aaaa' });
+    assert.throws(
+      () => lib.submitQuestion({ question: 'Koalas primarily eat what?', currentAnswer: 'Leaves', type: 'Single Choice' }, { name: 'B', token: 'player-bbbb' }),
+      (e) => e.status === 409,
+    );
+  });
+});
+
+describe('marking questions read', () => {
+  test('sets seenAt on unread public questions', () => {
+    const q = lib.submitQuestion({ question: 'Name a gas giant', currentAnswer: 'Jupiter', type: 'Single Choice' }, { name: 'A', token: 'player-aaaa' });
+    assert.equal(lib.markSeen([q.id]), 1);
+    assert.ok(findByText('Name a gas giant').seenAt);
+  });
+
+  test('leaves host questions alone', () => {
+    const q = lib.createQuestion({ question: 'Name a gas giant', currentAnswer: 'Jupiter', type: 'Single Choice' });
+    assert.equal(lib.markSeen([q.id]), 0);
+    assert.equal(findByText('Name a gas giant').seenAt, undefined);
+  });
+});

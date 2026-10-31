@@ -1,6 +1,7 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { store } from '../store.js';
+import { party } from '../multiplayer.js';
 import {
   fetchFiles,
   fetchLibrary,
@@ -10,6 +11,7 @@ import {
   addToPlaylist,
   importCsv,
   playlistCsvUrl,
+  markSeen,
 } from '../api.js';
 import QuestionEditor from '../components/QuestionEditor.vue';
 
@@ -26,17 +28,29 @@ const activeId = ref(ALL);
 const search = ref('');
 const catFilter = ref('');
 const typeFilter = ref('');
+const sourceFilter = ref(''); // '' | host | public | unread
 const selected = ref([]);
 const bulkTarget = ref('');
 const editing = ref(null); // null | 'new' | question id
 const editor = ref(null);
+// Answers start hidden so the host can browse with players watching.
+const showAllAnswers = ref(false);
+const flippedAnswers = ref(new Set()); // rows toggled against showAllAnswers
 
 const newPlaylist = reactive({ name: '', ordered: false });
 const importFile = ref('');
 
 const byId = computed(() => new Map(library.questions.map((q) => [q.id, q])));
 const activePlaylist = computed(() => library.playlists.find((p) => p.id === activeId.value) || null);
-const filtersActive = computed(() => !!(search.value.trim() || catFilter.value || typeFilter.value));
+const filtersActive = computed(
+  () => !!(search.value.trim() || catFilter.value || typeFilter.value || sourceFilter.value),
+);
+
+// Phone-written questions are `public`; ones the host wrote or imported have no source.
+const isPublic = (q) => q.source === 'public';
+const isUnread = (q) => isPublic(q) && !q.seenAt;
+const unreadCount = computed(() => library.questions.filter(isUnread).length);
+const SOURCE_MATCH = { host: (q) => !isPublic(q), public: isPublic, unread: isUnread };
 // Reordering by position only makes sense on the full, unfiltered list.
 const canReorder = computed(() => !!activePlaylist.value?.ordered && !filtersActive.value);
 
@@ -52,7 +66,8 @@ const visible = computed(() => {
     (q) =>
       (!term || q.question.toLowerCase().includes(term) || q.currentAnswer.toLowerCase().includes(term)) &&
       (!catFilter.value || q.categories.includes(catFilter.value)) &&
-      (!typeFilter.value || q.type === typeFilter.value),
+      (!typeFilter.value || q.type === typeFilter.value) &&
+      (!sourceFilter.value || SOURCE_MATCH[sourceFilter.value](q)),
   );
 });
 
@@ -106,7 +121,21 @@ function confirmDiscard() {
 function openEditor(id) {
   if (editing.value === id || !confirmDiscard()) return;
   editing.value = id;
+  const q = byId.value.get(id);
+  if (q && isUnread(q)) {
+    // Set locally first so the New tag clears without waiting on the server.
+    q.seenAt = new Date().toISOString();
+    markSeen([id]).catch(() => load());
+  }
 }
+
+function markAllRead() {
+  const ids = library.questions.filter(isUnread).map((q) => q.id);
+  run(() => markSeen(ids), `Marked ${ids.length} question(s) read.`);
+}
+
+// Reload when a phone writes a question, so it shows up while the host is here.
+watch(() => party.submitted, () => load());
 
 function closeEditor() {
   if (confirmDiscard()) editing.value = null;
@@ -138,6 +167,19 @@ function toggleAllVisible() {
   selected.value = allVisibleSelected.value
     ? selected.value.filter((id) => !ids.includes(id))
     : [...new Set([...selected.value, ...ids])];
+}
+
+const answerShown = (q) => showAllAnswers.value !== flippedAnswers.value.has(q.id);
+
+function toggleAnswer(id) {
+  const next = new Set(flippedAnswers.value);
+  if (!next.delete(id)) next.add(id);
+  flippedAnswers.value = next;
+}
+
+function toggleAllAnswers() {
+  showAllAnswers.value = !showAllAnswers.value;
+  flippedAnswers.value = new Set();
 }
 
 function addPlaylist() {
@@ -215,7 +257,16 @@ function runImport() {
     <div class="builder-head">
       <button type="button" class="btn back-btn" @click="goBack">&lt; Game Mode</button>
       <h1 class="title">Question Builder</h1>
-      <button type="button" class="btn btn-yellow" @click="openEditor('new')">+ New question</button>
+      <span class="builder-head-actions">
+        <button
+          v-if="unreadCount"
+          type="button"
+          class="btn back-btn btn-small"
+          title="Questions written on phones you haven't opened yet"
+          @click="sourceFilter = 'unread'"
+        >Unread ({{ unreadCount }})</button>
+        <button type="button" class="btn btn-yellow" @click="openEditor('new')">+ New question</button>
+      </span>
     </div>
 
     <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -288,6 +339,13 @@ function runImport() {
             <option value="">All types</option>
             <option v-for="t in TYPES" :key="t" :value="t">{{ t }}</option>
           </select>
+          <select v-model="sourceFilter" aria-label="Filter by who wrote it">
+            <option value="">Host and public</option>
+            <option value="host">Host only</option>
+            <option value="public">Public (from phones)</option>
+            <option value="unread">Unread public</option>
+          </select>
+          <button v-if="unreadCount" type="button" class="btn-link" @click="markAllRead">Mark all read</button>
         </div>
 
         <div class="bulk-bar">
@@ -305,6 +363,9 @@ function runImport() {
               Remove from this playlist
             </button>
           </template>
+          <button type="button" class="btn-link answers-toggle" :aria-pressed="showAllAnswers" @click="toggleAllAnswers">
+            {{ showAllAnswers ? 'Hide all answers' : 'Show all answers' }}
+          </button>
         </div>
 
         <p v-if="loading" class="hint-text">Loading…</p>
@@ -325,13 +386,23 @@ function runImport() {
             <button type="button" class="q-main" @click="openEditor(q.id)">
               <span class="q-text">{{ q.question }}</span>
               <span class="q-meta">
-                <span class="q-answer">✓ {{ q.currentAnswer }}</span>
+                <span v-if="answerShown(q)" class="q-answer">✓ {{ q.currentAnswer }}</span>
+                <span v-else class="q-answer-hidden">Answer hidden</span>
                 <span class="q-type">{{ q.type }}</span>
                 <span v-for="c in q.categories" :key="c" class="cat-tag small">{{ c }}</span>
                 <span v-if="q.attachment" title="Has media">🖼</span>
+                <span v-if="isUnread(q)" class="q-new">New</span>
+                <span v-if="isPublic(q)" class="q-by">by {{ q.submittedBy }}</span>
                 <span v-if="!activePlaylist" class="q-in">in {{ playlistCount(q) }} playlist(s)</span>
               </span>
             </button>
+            <button
+              type="button"
+              class="tool-btn"
+              :aria-pressed="answerShown(q)"
+              :aria-label="`${answerShown(q) ? 'Hide' : 'Show'} answer: ${q.question}`"
+              @click="toggleAnswer(q.id)"
+            >{{ answerShown(q) ? 'Hide' : 'Show' }}</button>
             <span v-if="canReorder" class="q-move">
               <button type="button" class="tool-btn" :disabled="i === 0" :aria-label="`Move up: ${q.question}`" @click="move(i, -1)">↑</button>
               <button type="button" class="tool-btn" :disabled="i === visible.length - 1" :aria-label="`Move down: ${q.question}`" @click="move(i, 1)">↓</button>

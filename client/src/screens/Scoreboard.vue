@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
+import AppName from '../components/AppName.vue';
 import EndGameButton from '../components/EndGameButton.vue';
 import GameProgress from '../components/GameProgress.vue';
 
@@ -54,7 +55,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel">
     <EndGameButton />
     <div class="top-row">
-      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
+      <div class="plaque"><AppName /></div>
       <GameProgress />
       <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
     </div>

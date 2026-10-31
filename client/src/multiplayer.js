@@ -15,6 +15,7 @@ export const party = reactive({
   code: '',
   phonesByTeam: {}, // playerId -> phones joined
   totalPhones: 0,
+  submitted: 0, // questions phones have written since the room opened
   lan: { enabled: false, addresses: [] },
 });
 
@@ -79,6 +80,8 @@ function onMessage(msg) {
   } else if (msg.t === 'roster') {
     party.phonesByTeam = msg.teams;
     party.totalPhones = msg.total;
+  } else if (msg.t === 'submitted') {
+    party.submitted += 1;
   } else if (msg.t === 'answer') {
     store.receiveAnswer(msg.team, msg);
   } else if (msg.t === 'error') {
@@ -132,6 +135,8 @@ export function snapshot() {
     text: q?.question ?? '',
     options: store.shownOptions.map((o, i) => ({ label: optionLabel(i), text: o.text, picture: !!o.attachment })),
   };
+  // The relay turns the token into a per-phone `wrote` flag and never forwards it.
+  if (q?.source === 'public') question.author = { name: q.submittedBy, token: q.authorToken };
   if (s === 'question') {
     // Hide whether the answer was right until the reveal.
     const locked = Object.fromEntries(Object.entries(answers).map(([id, a]) => [id, { label: a.label }]));
