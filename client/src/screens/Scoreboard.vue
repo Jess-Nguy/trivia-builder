@@ -64,7 +64,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     <p v-if="store.pointsLocked && store.settings.recordPoints" class="award-line locked">
       Answer was incorrect — no points to award.
     </p>
-    <p v-if="showHints" class="award-line">Hint assignment: {{ store.hintsTakenThisQuestion }} to distribute</p>
+    <p v-if="showHints" class="award-line">Hint assignment: {{ store.hintsTakenThisQuestion }} per player who saw it</p>
 
     <div class="players-grid">
       <div
@@ -91,7 +91,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
         <div v-if="showHints" class="counter">
           <button @click.stop="addHints(p, -1)" :disabled="(store.qHints[p.id] || 0) <= 0">−</button>
           <span class="val" :key="p.hints">{{ p.hints }} hint</span>
-          <button @click.stop="addHints(p, 1)" :disabled="store.hintsRemaining <= 0">+</button>
+          <button @click.stop="addHints(p, 1)" :disabled="(store.qHints[p.id] || 0) >= store.hintsTakenThisQuestion">+</button>
         </div>
       </div>
     </div>

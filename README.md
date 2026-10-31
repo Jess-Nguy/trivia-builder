@@ -136,7 +136,7 @@ question timer delay by secs
   *with* a hint is worth `2`, one *without* is worth `1` — and the defaulted value
   is **written back into the CSV** so it persists next time. When present it must
   be a number.
-- **Hint 1** is optional; a HINT button appears only when it's filled in.
+- **Hint 1** is optional; a SHOW HINT / HIDE HINT toggle (or `H`) appears only when it's filled in.
 - **Explanation** (optional) is prose shown on the Answer Reveal page. Keep it
   separate so `Current Answer` can stay an *exact* answer.
 - **question timer delay by secs** (optional): a non-negative number of seconds to

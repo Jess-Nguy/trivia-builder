@@ -8,7 +8,7 @@ const SHORTCUTS = {
   builder: [['Enter', 'Add a typed category (in the category box)']],
   question: [
     ['A–E or 1–5', 'Pick an option'],
-    ['H', 'Show the hint'],
+    ['H', 'Show or hide the hint'],
     ['P', 'Pause or resume the timer'],
     ['Enter', 'Submit / reveal the answer'],
     ['Space', 'Skip the reading countdown'],

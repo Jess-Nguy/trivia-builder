@@ -110,11 +110,10 @@ function selectOption(i) {
   if (!selectable.value) return; // showcasing mode: options aren't chosen
   if (i < displayOptions.value.length) selected.value = i;
 }
-function showHint() {
-  if (!hintShown.value) {
-    hintShown.value = true;
-    store.takeHint();
-  }
+// Hiding the hint again doesn't refund it: it's counted once, the first time it's shown.
+function toggleHint() {
+  hintShown.value = !hintShown.value;
+  if (hintShown.value && store.hintsTakenThisQuestion === 0) store.takeHint();
 }
 function togglePause() {
   if (store.settings.timer > 0 && !isReading.value) paused.value = !paused.value;
@@ -136,7 +135,7 @@ function onKey(e) {
     return;
   }
   if (e.key === 'Enter') return submit();
-  if (e.key.toLowerCase() === 'h' && hasHint.value) return showHint();
+  if (e.key.toLowerCase() === 'h' && hasHint.value) return toggleHint();
   if (e.key.toLowerCase() === 'p') return togglePause();
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const n = parseInt(e.key, 10);
@@ -220,7 +219,7 @@ const mmss = computed(() => {
       <p v-if="hintShown" class="hint-bubble">💡 {{ q.hint }}</p>
 
       <div class="q-actions">
-        <button v-if="hasHint" class="btn btn-orange" :disabled="hintShown" @click="showHint">💡 HINT <kbd>H</kbd></button>
+        <button v-if="hasHint" class="btn btn-orange" @click="toggleHint">💡 {{ hintShown ? 'HIDE HINT' : 'SHOW HINT' }} <kbd>H</kbd></button>
         <span v-else></span>
         <button class="btn btn-green btn-big" @click="submit">{{ submitLabel }} <kbd>Enter</kbd></button>
       </div>
