@@ -332,8 +332,9 @@ reload). A question goes straight into the bank, tagged public and unread (see
 *Question Builder*), and can be played in any game.
 
 - **Types:** Single Choice, Multiple Choice (2 to 5 text options, tick the right
-  one) and True or False, plus a category, hint and fun fact. The server runs the
-  same validation as the builder.
+  one) and True or False, plus up to 5 categories (the same chip picker as the
+  builder, with its suggestions), a hint and a fun fact. The server runs the same
+  validation as the builder.
 - **Media:** one picture, video or YouTube link for the question, which must start
   with `http://` or `https://`. The phone previews it, and **ADD TO THE BANK** stays
   disabled until the preview loads and the player ticks *Preview looks right*.

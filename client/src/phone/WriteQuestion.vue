@@ -13,7 +13,7 @@ const blank = () => ({
   options: ['', '', '', ''],
   correct: 0,
   truth: 'TRUE',
-  category: '',
+  categories: [],
   hint: '',
   explanation: '',
   attachment: '',
@@ -21,7 +21,10 @@ const blank = () => ({
 
 function loadDraft() {
   try {
-    return { ...blank(), ...JSON.parse(localStorage.getItem(DRAFT_KEY)) };
+    const { category, ...saved } = JSON.parse(localStorage.getItem(DRAFT_KEY)) || {};
+    // Drafts saved before multiple categories hold a single `category` string.
+    if (category && !saved.categories) saved.categories = [category];
+    return { ...blank(), ...saved };
   } catch {
     return blank();
   }
@@ -42,6 +45,7 @@ export const hasDraft = () => !!(draft.question.trim() || draft.answer.trim() ||
 <script setup>
 import { ref, computed, watch } from 'vue';
 import Media from '../components/Media.vue';
+import CategoryPicker from '../components/CategoryPicker.vue';
 
 const props = defineProps({
   categories: { type: Array, default: () => [] },
@@ -53,6 +57,8 @@ const emit = defineEmits(['submit', 'close']);
 
 const TYPES = ['Single Choice', 'Multiple Choice', 'True or False'];
 const PREVIEW_DELAY_MS = 600;
+// Matches the relay's limit (server/library.js submitQuestion).
+const MAX_CATEGORIES = 5;
 
 // Attachment preview: `idle` with no link, then `loading` until Media reports
 // `ready` or `failed`. Submit needs `ready` plus the player's confirmation.
@@ -83,6 +89,7 @@ const answer = computed(() => {
 const problems = computed(() => {
   const list = [];
   if (!draft.question.trim()) list.push('Write the question.');
+  if (draft.categories.length > MAX_CATEGORIES) list.push(`Pick at most ${MAX_CATEGORIES} categories.`);
   if (draft.type === 'Multiple Choice') {
     if (filledOptions.value.filter(Boolean).length < 2) list.push('Add at least 2 options.');
     if (!answer.value) list.push('Tick the option that is right.');
@@ -116,16 +123,16 @@ function submit() {
     question: draft.question.trim(),
     currentAnswer: answer.value,
     options,
-    categories: draft.category.trim() ? [draft.category.trim()] : [],
+    categories: draft.categories,
     hint: draft.hint.trim(),
     explanation: draft.explanation.trim(),
     attachment: draft.attachment.trim(),
   });
 }
 
-// Once saved, start the next draft, keeping the type and category for a run of similar questions.
+// Once saved, start the next draft, keeping the type and categories for a run of similar questions.
 watch(() => props.reply?.ok, (ok) => {
-  if (ok) Object.assign(draft, blank(), { type: draft.type, category: draft.category });
+  if (ok) Object.assign(draft, blank(), { type: draft.type, categories: draft.categories });
 });
 </script>
 
@@ -179,11 +186,8 @@ watch(() => props.reply?.ok, (ok) => {
         <label><input v-model="draft.truth" type="radio" value="FALSE" /> False</label>
       </fieldset>
 
-      <label class="phone-label" for="wq-category">Category</label>
-      <input id="wq-category" v-model="draft.category" list="wq-categories" maxlength="40" autocomplete="off" />
-      <datalist id="wq-categories">
-        <option v-for="c in categories" :key="c" :value="c" />
-      </datalist>
+      <span class="phone-label">Categories (up to {{ MAX_CATEGORIES }})</span>
+      <CategoryPicker v-model="draft.categories" :suggestions="categories" />
 
       <label class="phone-label" for="wq-hint">Hint (optional)</label>
       <input id="wq-hint" v-model="draft.hint" maxlength="200" autocomplete="off" />
@@ -252,6 +256,7 @@ watch(() => props.reply?.ok, (ok) => {
 .write-type:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
 .write-options { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .write-option { display: flex; align-items: center; gap: 6px; }
+.write-form :deep(.cat-draft) { border: none; flex: 1 1 140px; padding: 4px; font: inherit; font-size: 18px; }
 .write-preview { display: flex; flex-direction: column; gap: 6px; }
 .write-preview :deep(img), .write-preview :deep(video) { max-width: 100%; max-height: 240px; }
 </style>

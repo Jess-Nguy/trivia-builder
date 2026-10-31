@@ -205,6 +205,8 @@ export function findDuplicate(input, questions) {
 }
 
 const HTTP_URL = /^https?:\/\/\S+$/i;
+// Each new name a phone types becomes a Builder category, so phones get a small cap.
+const MAX_PHONE_CATEGORIES = 5;
 
 /**
  * Save a question written on a player's phone straight into the bank, tagged
@@ -222,6 +224,11 @@ export function submitQuestion(input, { name, token }) {
     explanation: input.explanation,
     attachment: input.attachment,
   });
+  if (fields.categories.length > MAX_PHONE_CATEGORIES) {
+    throw new LibraryError(400, 'Question has validation problems.', [
+      { field: 'categories', message: `Pick at most ${MAX_PHONE_CATEGORIES} categories.` },
+    ]);
+  }
   if (fields.attachment && !HTTP_URL.test(fields.attachment)) {
     throw new LibraryError(400, 'Question has validation problems.', [
       { field: 'attachment', message: 'Attachment must be an http:// or https:// link.' },

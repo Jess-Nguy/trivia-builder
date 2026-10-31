@@ -209,6 +209,19 @@ describe('questions written on phones', () => {
     assert.throws(() => lib.submitQuestion({ ...KOALA, currentAnswer: '' }, AUTHOR), (e) => e.status === 400);
   });
 
+  test('keep every category the player picked', () => {
+    const q = lib.submitQuestion({ ...KOALA, categories: ['Animal', 'Geography'] }, AUTHOR);
+    assert.deepEqual(q.categories, ['Animal', 'Geography']);
+  });
+
+  test('reject more than 5 categories', () => {
+    const categories = ['Animal', 'Biology', 'Geography', 'Space', 'Games', 'History'];
+    assert.throws(
+      () => lib.submitQuestion({ ...KOALA, categories }, AUTHOR),
+      (e) => e.problems[0].field === 'categories',
+    );
+  });
+
   test('cannot attach media to options', () => {
     const q = lib.submitQuestion(
       { question: 'Pick the red one', type: 'Multiple Choice', currentAnswer: 'Rose',
