@@ -165,6 +165,104 @@ export function createQuestion(input) {
   return q;
 }
 
+// Words too common to tell two questions apart.
+const FILLER = new Set(
+  ('a an and are as by called did do does for how in is it its known many much name of on or ' +
+    'the that these this those to was were what which who whom whose with').split(' '),
+);
+
+function contentWords(s) {
+  const plain = clean(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  return new Set(plain.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w && !FILLER.has(w)));
+}
+
+// Jaccard similarity: shared words over all distinct words.
+function overlap(a, b) {
+  if (!a.size || !b.size) return 0;
+  let shared = 0;
+  for (const w of a) if (b.has(w)) shared += 1;
+  return shared / (a.size + b.size - shared);
+}
+
+/**
+ * The first bank question a phone submission looks like a copy of, or undefined.
+ * Deliberately strict: rewording a question or swapping a few words still
+ * matches, at the cost of rejecting some genuinely different questions.
+ */
+export function findDuplicate(input, questions) {
+  const words = contentWords(input.question);
+  const key = [...words].sort().join(' ');
+  const answer = [...contentWords(input.currentAnswer)].sort().join(' ');
+  // TRUE/FALSE answers match half the bank, so they don't count as a shared answer.
+  const answerCounts = answer && !['true', 'false'].includes(answer);
+  return questions.find((q) => {
+    const other = contentWords(q.question);
+    if ([...other].sort().join(' ') === key) return true;
+    const score = overlap(words, other);
+    const sameAnswer = answerCounts && [...contentWords(q.currentAnswer)].sort().join(' ') === answer;
+    return score >= 0.6 || (sameAnswer && score >= 0.4);
+  });
+}
+
+const HTTP_URL = /^https?:\/\/\S+$/i;
+
+/**
+ * Save a question written on a player's phone straight into the bank, tagged
+ * public and unread. Phones send text-only options; the only media a phone can
+ * attach is the question attachment, which it previewed before sending.
+ */
+export function submitQuestion(input, { name, token }) {
+  const fields = normalizeQuestion({
+    question: input.question,
+    type: input.type,
+    currentAnswer: input.currentAnswer,
+    options: Array.isArray(input.options) ? input.options.map((o) => ({ text: o?.text })) : [],
+    categories: input.categories,
+    hint: input.hint,
+    explanation: input.explanation,
+    attachment: input.attachment,
+  });
+  if (fields.attachment && !HTTP_URL.test(fields.attachment)) {
+    throw new LibraryError(400, 'Question has validation problems.', [
+      { field: 'attachment', message: 'Attachment must be an http:// or https:// link.' },
+    ]);
+  }
+  const questions = loadQuestions();
+  if (findDuplicate(fields, questions)) {
+    throw new LibraryError(409, 'Too close to a question already in the bank.');
+  }
+  const now = new Date().toISOString();
+  const q = {
+    id: crypto.randomUUID(),
+    ...fields,
+    source: 'public',
+    submittedBy: name,
+    authorToken: token,
+    seenAt: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+  questions.push(q);
+  saveQuestions(questions);
+  return q;
+}
+
+/** Mark public questions as read. Returns how many changed. */
+export function markSeen(ids) {
+  const want = new Set(ids);
+  const questions = loadQuestions();
+  const now = new Date().toISOString();
+  let changed = 0;
+  for (const q of questions) {
+    if (want.has(q.id) && q.source === 'public' && !q.seenAt) {
+      q.seenAt = now;
+      changed += 1;
+    }
+  }
+  if (changed) saveQuestions(questions);
+  return changed;
+}
+
 export function updateQuestion(id, input) {
   const questions = loadQuestions();
   const i = questions.findIndex((q) => q.id === id);

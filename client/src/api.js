@@ -50,6 +50,7 @@ export const updateQuestion = (id, q) =>
   request(`/api/library/questions/${encodeURIComponent(id)}`, { method: 'PUT', body: q });
 export const deleteQuestion = (id) =>
   request(`/api/library/questions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const markSeen = (ids) => request('/api/library/seen', { method: 'POST', body: { ids } });
 
 export const createPlaylist = (p) => request('/api/library/playlists', { method: 'POST', body: p });
 export const updatePlaylist = (id, p) =>

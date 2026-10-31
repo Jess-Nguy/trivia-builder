@@ -4,6 +4,9 @@ import { youTubeId, isAudioOnly, loadYouTubeApi } from '../youtube.js';
 import { store } from '../store.js';
 
 const props = defineProps({ src: String });
+// `ready` once the media can play or show, `failed` if it can't (bad link,
+// deleted video). The phone's write form waits on these before allowing submit.
+const emit = defineEmits(['ready', 'failed']);
 
 const ytId = computed(() => youTubeId(props.src || ''));
 const ytAudio = computed(() => !!ytId.value && isAudioOnly(props.src || ''));
@@ -136,12 +139,14 @@ async function buildPlayer() {
     events: {
       onReady: (e) => {
         playerReady = true;
+        emit('ready');
         duration.value = e.target.getDuration() || 0;
         // Force sound on: the player can otherwise come up muted, and YouTube's
         // mute control is tucked away (only visible once you fullscreen it).
         e.target.unMute();
         e.target.playVideo();
       },
+      onError: () => emit('failed'),
       onStateChange: (e) => {
         playing.value = e.data === window.YT.PlayerState.PLAYING;
         // Only the audio-only UI needs the progress poll; the visible video
@@ -221,8 +226,15 @@ onBeforeUnmount(() => {
       </div>
       <div class="yt-audio-time">{{ fmtTime(elapsed) }} / {{ fmtTime(duration) }}</div>
     </div>
-    <img v-else-if="kind === 'image'" :src="src" alt="question media" referrerpolicy="no-referrer" />
-    <video v-else-if="kind === 'video'" :src="src" controls />
-    <audio v-else-if="kind === 'audio'" :src="src" controls />
+    <img
+      v-else-if="kind === 'image'"
+      :src="src"
+      alt="question media"
+      referrerpolicy="no-referrer"
+      @load="emit('ready')"
+      @error="emit('failed')"
+    />
+    <video v-else-if="kind === 'video'" :src="src" controls @loadeddata="emit('ready')" @error="emit('failed')" />
+    <audio v-else-if="kind === 'audio'" :src="src" controls @loadedmetadata="emit('ready')" @error="emit('failed')" />
   </div>
 </template>

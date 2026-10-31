@@ -202,13 +202,13 @@ See SCOPE §4 Feature 29.
 
 ---
 
-## Phase 13 — Player-written questions (planned)
+## Phase 13 — Player-written questions (step 1 built)
 
 Players add questions from their phones on topics they know, to stump the rest of the room. Their questions go straight into the bank, tagged so the host can tell them apart, and play in regular games as well as a dedicated mode. Built in four steps; each ships on its own.
 
 **Data model.** Phone submissions are saved to `data/questions.json` with `source: 'public'`, `submittedBy` (the player's nickname), `authorToken` (the phone's player token) and `seenAt: null`. A question without `source` is a host question, so the existing bank needs no migration. `authorToken` is never sent to any phone except its owner.
 
-**Step 1 — Submit from a phone**
+**Step 1 — Submit from a phone (built; SCOPE §4 Feature 30)**
 - **Nickname**: the phone join screen asks for a nickname (kept in localStorage with the token). The hub stores it on the phone's record.
 - **Submit message**: a `{ t: 'submit', question }` socket message. The hub validates it with `normalizeQuestion` and replies `submitted` or `rejected` with field problems, so the phone form shows the same errors as the Builder. The library API stays loopback-only.
 - **Submission window**: the hub accepts submissions only while the host's phase is `lobby`, `reveal`, `scores` or `final`. During `question` the phone hides the form and keeps the draft, so nothing typed is lost.

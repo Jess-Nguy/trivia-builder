@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import os from 'node:os';
 import { WebSocketServer } from 'ws';
+import { LibraryError, getLibrary, submitQuestion } from './library.js';
 
 // WebSocket path for phone play. Every other upgrade (e.g. Vite's HMR socket on
 // the same dev server) is left alone.
@@ -8,6 +9,11 @@ export const GAME_PATH = '/ws/game';
 
 const MAX_TEAMS = 8;
 const MAX_TEXT = 80;
+const MAX_NAME = 24;
+// Questions one phone may write per room, so a stuck button can't flood the bank.
+const MAX_SUBMISSIONS = 20;
+// Phones may write questions whenever nobody is answering one.
+const SUBMIT_PHASES = new Set(['lobby', 'reveal', 'scores', 'final']);
 // No I or O, so a code read off the TV can't be mistaken for 1 or 0.
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const TOKEN_RE = /^[A-Za-z0-9-]{8,64}$/;
@@ -39,14 +45,18 @@ function randomCode() {
 // answer so teams can't read each other's picks before the reveal.
 //
 // A connection is `{ local, send(obj) }`, so tests can drive the hub without
-// real sockets.
+// real sockets, and `library` can be swapped for a fake bank.
+const bank = { submitQuestion, categories: () => getLibrary().categories };
+
 export class GameHub {
-  constructor({ makeCode = randomCode } = {}) {
+  constructor({ makeCode = randomCode, library = bank } = {}) {
     this.makeCode = makeCode;
+    this.library = library;
     this.code = null;
     this.host = null;
     this.state = null;
-    this.phones = new Map(); // conn -> { token, team }
+    this.phones = new Map(); // conn -> { token, name, team }
+    this.submissions = new Map(); // token -> questions written this room
   }
 
   message(conn, raw) {
@@ -63,6 +73,7 @@ export class GameHub {
       case 'join': return this.join(conn, msg);
       case 'team': return this.pickTeam(conn, msg.team);
       case 'answer': return this.answer(conn, msg);
+      case 'submit': return this.submit(conn, msg.question);
     }
   }
 
@@ -84,18 +95,20 @@ export class GameHub {
   setState(conn, state) {
     if (conn !== this.host || !state || typeof state !== 'object') return;
     this.state = state;
-    for (const [phone, p] of this.phones) phone.send({ t: 'state', state: this.stateFor(p.team) });
+    for (const [phone, p] of this.phones) phone.send({ t: 'state', state: this.stateFor(p) });
   }
 
-  join(conn, { code, token, team }) {
+  join(conn, { code, token, name, team }) {
     if (!this.code || String(code ?? '').trim().toUpperCase() !== this.code) {
       return conn.send({ t: 'error', error: 'No game with that code.' });
     }
     if (!TOKEN_RE.test(String(token ?? ''))) return conn.send({ t: 'error', error: 'Bad player token.' });
-    const p = { token, team: this.validTeam(team) };
+    const nickname = typeof name === 'string' ? name.trim().slice(0, MAX_NAME) : '';
+    if (!nickname) return conn.send({ t: 'error', error: 'Pick a nickname first.' });
+    const p = { token, name: nickname, team: this.validTeam(team) };
     this.phones.set(conn, p);
-    conn.send({ t: 'joined', code: this.code });
-    conn.send({ t: 'state', state: this.stateFor(p.team) });
+    conn.send({ t: 'joined', code: this.code, categories: this.library.categories() });
+    conn.send({ t: 'state', state: this.stateFor(p) });
     this.sendRoster();
   }
 
@@ -103,7 +116,7 @@ export class GameHub {
     const p = this.phones.get(conn);
     if (!p) return;
     p.team = this.validTeam(team);
-    conn.send({ t: 'state', state: this.stateFor(p.team) });
+    conn.send({ t: 'state', state: this.stateFor(p) });
     this.sendRoster();
   }
 
@@ -112,6 +125,7 @@ export class GameHub {
   answer(conn, { n, choice, text }) {
     const p = this.phones.get(conn);
     if (!p || p.team == null || !this.host) return;
+    if (this.state?.question?.author?.token === p.token) return;
     const out = { t: 'answer', team: p.team, n };
     if (Number.isInteger(choice)) out.choice = choice;
     else if (typeof text === 'string' && text.trim()) out.text = text.trim().slice(0, MAX_TEXT);
@@ -119,17 +133,44 @@ export class GameHub {
     this.host.send(out);
   }
 
+  // Save a question written on this phone. The author is the hub's record of
+  // the phone, never a name or token from the message.
+  submit(conn, question) {
+    const p = this.phones.get(conn);
+    if (!p) return;
+    const reject = (error, problems = []) => conn.send({ t: 'rejected', error, problems });
+    if (!SUBMIT_PHASES.has(this.state?.phase)) return reject('Questions open again after this one.');
+    const count = this.submissions.get(p.token) ?? 0;
+    if (count >= MAX_SUBMISSIONS) return reject(`That's ${MAX_SUBMISSIONS} questions from you tonight. Thank you!`);
+    try {
+      const q = this.library.submitQuestion(question && typeof question === 'object' ? question : {}, p);
+      this.submissions.set(p.token, count + 1);
+      conn.send({ t: 'submitted', question: q.question });
+      this.host?.send({ t: 'submitted', by: p.name });
+    } catch (err) {
+      if (err instanceof LibraryError) return reject(err.message, err.problems);
+      reject('Could not save the question.');
+    }
+  }
+
   validTeam(team) {
     const count = Array.isArray(this.state?.teams) ? this.state.teams.length : MAX_TEAMS;
     return Number.isInteger(team) && team >= 0 && team < count ? team : null;
   }
 
-  // The state a phone on `team` may see: the shared view plus its own team's
-  // locked answer (`mine`), with every other team's answer removed.
-  stateFor(team) {
+  // The state a phone may see: the shared view plus its own team's locked
+  // answer (`mine`), with every other team's answer removed. A player-written
+  // question carries its author's name; only the author's phone learns it
+  // `wrote` it, and no phone gets the author's token.
+  stateFor({ team, token }) {
     if (!this.state) return null;
-    const { answers, ...shared } = this.state;
-    return { ...shared, mine: team != null ? answers?.[team] ?? null : null };
+    const { answers, question, ...shared } = this.state;
+    const out = { ...shared, mine: team != null ? answers?.[team] ?? null : null };
+    if (question) {
+      const { author, ...rest } = question;
+      out.question = author ? { ...rest, author: author.name, wrote: author.token === token } : rest;
+    }
+    return out;
   }
 
   // Phones per team, counting a player once even with two tabs open.

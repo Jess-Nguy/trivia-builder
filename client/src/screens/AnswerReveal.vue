@@ -109,6 +109,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     </div>
 
     <div class="answer-body explanation reveal-hero" style="--i: 2" v-if="q.explanation">{{ q.explanation }}</div>
+    <p v-if="q.source === 'public'" class="written-by reveal-hero" style="--i: 2">✍️ Written by <strong>{{ q.submittedBy }}</strong></p>
 
     <div v-if="store.phonePlay" class="team-answers reveal-hero" style="--i: 3">
       <p class="hint-text">Phone answers · click a team or press its number to flip right/wrong</p>

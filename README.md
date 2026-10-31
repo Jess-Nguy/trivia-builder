@@ -63,8 +63,10 @@ Click **✏️ Build questions** on the Game Mode screen. The builder has three 
   choose **Play in order** or leave it shuffled. **Import a CSV** copies a file from
   `/import` into the bank and makes a playlist from it; rows already in the bank
   (same question + answer + question attachment) are reused, not duplicated.
-- **Questions** (middle): search by question or answer text, filter by category or
-  type, and tick rows to **Add to playlist…** in bulk. Inside a playlist you can
+- **Questions** (middle): search by question or answer text, filter by category,
+  type or who wrote it (host or public), and tick rows to **Add to playlist…** in bulk.
+  Questions written on phones show *by <nickname>*, and a **New** tag until you open
+  them; **Unread (N)** in the header lists them and **Mark all read** clears the tags. Inside a playlist you can
   rename it, switch between **Shuffle** and **Play in order**, **Export CSV** (the
   same columns as `/import`, so it can be dropped back in or shared), remove
   questions (× or bulk), and delete the playlist (its questions stay in the bank).
@@ -87,7 +89,10 @@ changes it everywhere; deleting it removes it from every playlist.
 ### Storage
 
 - `data/questions.json`: the question bank, in the same shape the CSV parser
-  produces, plus an `id` and timestamps.
+  produces, plus an `id` and timestamps. Questions written on phones also carry
+  `source: "public"`, `submittedBy` (the nickname), `authorToken` (the phone's
+  player token, never sent to other phones) and `seenAt` (when you first opened it,
+  `null` while unread). A question without `source` is a host question.
 - `data/playlists.json`: `{ id, name, ordered, questionIds[] }` per playlist.
 
 Both are created on the first save and written atomically (temp file + rename).
@@ -297,8 +302,8 @@ Kahoot/Jackbox-style: the TV stays the main screen, and each team answers on pho
 1. Start the app with `npm run party` (or `npm start`), on a computer on the same
    Wi-Fi as the phones.
 2. On Game Mode, tick **📱 teams answer on their phones**. Phones scan the QR code
-   (or open the address and type the room code), then pick a team. Any number of
-   phones can join one team.
+   (or open the address and type the room code and a nickname), then pick a team.
+   Any number of phones can join one team.
 3. Start the game. Once the reading delay ends, phones show the option letters
    (A–E, or TRUE/FALSE) or, for Single Choice, a text box. **The first answer from a
    team locks it in** for the whole team. The Question screen shows who's locked
@@ -317,6 +322,31 @@ answer before the reveal, and never see another team's pick. The room-wide verdi
 stamp and streak record are off in phone play, since each team gets its own verdict.
 
 Phones reconnect on their own after sleeping or reloading, back to the same team.
+
+### Writing questions on phones
+
+Players can add questions on topics they know, to stump the room. **✍️ Write a
+question** is on the phone in the lobby, on the reveal and on the scores; the form
+closes while a question is being answered and keeps the draft (also across a
+reload). A question goes straight into the bank, tagged public and unread (see
+*Question Builder*), and can be played in any game.
+
+- **Types:** Single Choice, Multiple Choice (2 to 5 text options, tick the right
+  one) and True or False, plus a category, hint and fun fact. The server runs the
+  same validation as the builder.
+- **Media:** one picture, video or YouTube link for the question, which must start
+  with `http://` or `https://`. The phone previews it, and **ADD TO THE BANK** stays
+  disabled until the preview loads and the player ticks *Preview looks right*.
+  Options can't carry media from a phone.
+- **Duplicates:** the check is strict on purpose. It ignores case, accents,
+  punctuation and filler words ("what", "the", "which", ...) and rejects a question
+  whose words match one in the bank, overlap by 60% or more, or overlap by 40% or
+  more with the same answer. The phone is told it's too close without being shown
+  the bank question.
+- **Limit:** 20 questions per player each time the server starts.
+- **When it's played:** the Answer Reveal shows *✍️ Written by <nickname>*. The
+  author's phone shows "You wrote this one!" instead of the answer buttons, and the
+  relay drops any answer from it; teammates can still answer.
 The room code lasts until the server restarts, so reloading the host page keeps
 everyone in.
 
