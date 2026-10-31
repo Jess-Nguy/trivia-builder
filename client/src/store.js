@@ -127,7 +127,7 @@ function loadNames() {
 }
 
 export const store = reactive({
-  screen: 'gameMode', // gameMode | question | answer | scoreboard | final
+  screen: 'gameMode', // gameMode | builder | question | answer | scoreboard | final
 
   // Game Mode settings. Seeded from localStorage so the previous game's choices
   // become the defaults for the next one (see loadSettings / persistSettings).
@@ -382,11 +382,12 @@ export const store = reactive({
       hints: 0,
     }));
     // Exclude questions already played for this file, then take a random sample
-    // of the requested size. If fewer unplayed remain than requested, serve
-    // what's left and flag the shortfall so the UI can warn.
+    // of the requested size (or the first N, for an ordered playlist). If fewer
+    // unplayed remain than requested, serve what's left and flag the shortfall
+    // so the UI can warn.
     const played = this.playedKeysForFile(settings.fileName);
     const unplayed = allQuestions.filter((q) => !played.has(questionKey(q)));
-    this.questions = shuffle(unplayed).slice(0, settings.numQuestions);
+    this.questions = (settings.ordered ? unplayed : shuffle(unplayed)).slice(0, settings.numQuestions);
     this.exhaustedNotice =
       this.questions.length < settings.numQuestions
         ? { requested: settings.numQuestions, served: this.questions.length }

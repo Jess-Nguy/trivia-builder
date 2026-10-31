@@ -1,13 +1,14 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { store } from '../store.js';
-import { fetchFiles, fetchQuestions, fetchBackgroundAudio } from '../api.js';
+import { fetchFiles, fetchQuestions, fetchBackgroundAudio, fetchLibrary, fetchPlaylist } from '../api.js';
 
 // Label for questions that carry no category, so they remain playable when
 // filtering is active rather than being silently dropped from the pool.
 const UNCATEGORIZED = 'Uncategorized';
 
 const files = ref([]);
+const playlists = ref([]); // builder playlists, listed above the CSVs in the dropdown
 const audioTracks = ref([]); // background-music options from background audio.csv
 const error = ref('');
 const loading = ref(false);
@@ -20,8 +21,13 @@ function onAudioChange(e) {
   store.setAudioTrack(track || { link: '', title: '' });
 }
 
-// Parsed data for the currently selected file.
-const loaded = ref(null); // { questions, problems, total }
+// Dropdown value for a builder playlist. CSVs keep their bare file name so
+// saved settings and played history from before playlists still match.
+const PLAYLIST_PREFIX = 'playlist:';
+const playlistValue = (p) => PLAYLIST_PREFIX + p.id;
+
+// Parsed data for the currently selected file or playlist.
+const loaded = ref(null); // { questions, problems, total, ordered? }
 
 // Categories the player has chosen to include. Empty until a file loads, then
 // defaults to every category (i.e. play everything).
@@ -135,13 +141,14 @@ onMounted(async () => {
   }
   store.resizeNames(form.numPlayers);
   try {
-    files.value = await fetchFiles();
+    [files.value, { playlists: playlists.value }] = await Promise.all([fetchFiles(), fetchLibrary()]);
   } catch (e) {
     error.value = e.message;
   }
   // Re-select the previously played file (if it still exists) and load its
   // questions, so the host can start the next round without re-picking.
-  if (saved.fileName && files.value.includes(saved.fileName)) {
+  const sources = [...files.value, ...playlists.value.map(playlistValue)];
+  if (saved.fileName && sources.includes(saved.fileName)) {
     form.fileName = saved.fileName;
     await onFileChange(true);
   }
@@ -157,7 +164,9 @@ async function onFileChange(restore = false) {
   if (!form.fileName) return;
   loading.value = true;
   try {
-    const data = await fetchQuestions(form.fileName);
+    const data = form.fileName.startsWith(PLAYLIST_PREFIX)
+      ? await fetchPlaylist(form.fileName.slice(PLAYLIST_PREFIX.length))
+      : await fetchQuestions(form.fileName);
     loaded.value = data;
     // When reopening the previous game's file, restore its saved category
     // selection (limited to categories that still exist); otherwise — or if none
@@ -168,7 +177,7 @@ async function onFileChange(restore = false) {
     selectedCategories.value = restored.length ? restored : [...categories.value];
     form.numQuestions = Math.min(form.numQuestions || 1, data.total) || 1;
     if (data.total === 0) {
-      error.value = 'This file has no valid questions.';
+      error.value = 'This selection has no valid questions.';
     }
   } catch (e) {
     error.value = e.message;
@@ -199,7 +208,10 @@ function startGame() {
   clampPlayers();
   clampQuestions();
   clampTimer();
-  store.startGame({ ...form, categories: [...selectedCategories.value] }, filteredQuestions.value);
+  store.startGame(
+    { ...form, categories: [...selectedCategories.value], ordered: !!loaded.value.ordered },
+    filteredQuestions.value,
+  );
 }
 </script>
 
@@ -207,6 +219,7 @@ function startGame() {
   <div class="panel">
     <div class="plaque flicker-on"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
     <h1 class="title">Game Mode</h1>
+    <button type="button" class="btn back-btn builder-link" @click="store.screen = 'builder'">✏️ Build questions</button>
 
     <div class="form-row">
       <label>
@@ -245,10 +258,17 @@ function startGame() {
     </div>
 
     <div class="form-row">
-      <label>select questions file:</label>
+      <label>select questions:</label>
       <select v-model="form.fileName" @change="onFileChange()">
-        <option value="" disabled>— choose a file from /import —</option>
-        <option v-for="f in files" :key="f" :value="f">{{ f }}</option>
+        <option value="" disabled>— choose a playlist or a file from /import —</option>
+        <optgroup v-if="playlists.length" label="Playlists">
+          <option v-for="p in playlists" :key="p.id" :value="playlistValue(p)">
+            {{ p.name }} ({{ p.questionIds.length }}{{ p.ordered ? ', in order' : '' }})
+          </option>
+        </optgroup>
+        <optgroup label="CSV files">
+          <option v-for="f in files" :key="f" :value="f">{{ f }}</option>
+        </optgroup>
       </select>
     </div>
 
@@ -313,7 +333,7 @@ function startGame() {
       {{ filteredQuestions.length }} question(s) match the selected categor{{ selectedCategories.length === 1 ? 'y' : 'ies' }}.
     </p>
     <p v-if="fileSelected && filteredQuestions.length" class="hint-text played-row">
-      <span>{{ unplayedCount }} of {{ filteredQuestions.length }} still unplayed for this file.</span>
+      <span>{{ unplayedCount }} of {{ filteredQuestions.length }} still unplayed for this {{ form.fileName.startsWith(PLAYLIST_PREFIX) ? 'playlist' : 'file' }}.</span>
       <button
         v-if="unplayedCount < filteredQuestions.length"
         type="button"
@@ -328,6 +348,9 @@ function startGame() {
     </p>
     <p v-if="allPlayed" class="error">
       Every question in this selection has been played. Clear played history to replay them.
+    </p>
+    <p v-if="loaded?.ordered" class="hint-text">
+      This playlist plays in its saved order, skipping questions already played.
     </p>
     <p v-if="shortPool" class="hint-text">
       Only {{ unplayedCount }} unplayed question(s) remain — this game will play those.

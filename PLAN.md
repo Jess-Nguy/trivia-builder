@@ -2,7 +2,7 @@
 
 A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists **tasks**, the **deliverable**, and **how to verify** before moving on. Build phases in order — each depends on the previous. Commit at the end of every phase.
 
-**Stack:** Node + Express (backend) · Vue 3 + Vite (frontend) · CSV files in `/import`, no database.
+**Stack:** Node + Express (backend) · Vue 3 + Vite (frontend) · CSV files in `/import` and JSON files in `data/`, no database.
 
 **Reference:** [SCOPE.md](SCOPE.md) is the source of truth for features and acceptance criteria. The sample data is `import/Trivia Mix - June 2 2026.csv`.
 
@@ -167,6 +167,21 @@ Ideas taken from the [Halloween Heist trivia site](https://halloween-heist.vais-
 
 **Deliverable:** Each mode behind its own Game Mode control, with SCOPE acceptance rows added when built.
 **Verify:** Hard mode grades "the pacific ocean" as correct for `Pacific Ocean` and the override flips the streak; an `Order` row shuffles, locks, and reports per-slot results; Study mode pages through without changing the unplayed count.
+
+---
+
+## Phase 11 — Question Builder & playlists (built)
+
+See SCOPE §4 Feature 28.
+
+**Tasks**
+- **Bank + playlists backend** (`server/library.js`): `data/questions.json` and `data/playlists.json`, atomic writes, `normalizeQuestion` validation that mirrors `parseCsv`, playlist membership by question id, CSV import with dedupe, playlist CSV export.
+- **API** (`server/apiHandler.js`): `GET /api/library`; `POST/PUT/DELETE /api/library/questions[/:id]`; `POST/GET/PUT/DELETE /api/library/playlists[/:id]`, `POST …/:id/add`, `GET …/:id/csv`; `POST /api/library/import`.
+- **Builder screen** (`Builder.vue`, `QuestionEditor.vue`, `CategoryPicker.vue`): playlists column, filterable question list with bulk add, type-aware editor.
+- **Game Mode**: playlists in the questions dropdown (value `playlist:<id>`, so CSV names and their played history are unchanged); `store.startGame` keeps order for ordered playlists.
+
+**Tests:** `npm test` (`test/library.test.js`, against the 316-question CSV).
+**Verify:** Create a playlist, save a Multiple Choice question into it, import a CSV twice (second import adds 0), reorder an ordered playlist, start a game from it and see the first question in saved order; exported CSV parses back to identical questions.
 
 ---
 

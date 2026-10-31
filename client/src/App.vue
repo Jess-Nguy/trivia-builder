@@ -2,6 +2,7 @@
 import { store } from './store.js';
 import './display.js';
 import GameMode from './screens/GameMode.vue';
+import Builder from './screens/Builder.vue';
 import Question from './screens/Question.vue';
 import AnswerReveal from './screens/AnswerReveal.vue';
 import Scoreboard from './screens/Scoreboard.vue';
@@ -13,6 +14,7 @@ import StageBackdrop from './components/StageBackdrop.vue';
 
 const screens = {
   gameMode: GameMode,
+  builder: Builder,
   question: Question,
   answer: AnswerReveal,
   scoreboard: Scoreboard,

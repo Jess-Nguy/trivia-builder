@@ -24,7 +24,7 @@
 |-------|--------|
 | **Language(s)** | JavaScript (Node.js + browser) |
 | **Framework(s)** | Express (backend API) · Vue 3 + Vite (frontend) |
-| **Database** | None — CSV files only, stored in `/import`. Files are either overwritten or created new. |
+| **Database** | None. CSV files in `/import` (overwritten or created new), plus `data/questions.json` and `data/playlists.json` for the Question Builder's bank and playlists. |
 | **External APIs / Services** | None required. Media questions may reference external image/video/audio URLs. |
 | **Hosting / Deploy** | Localhost only (`npm run dev`). Not deployed publicly — single-user personal use. |
 | **Other tools** | A CSV parser (e.g. `papaparse` or `csv-parse`) on the backend. No auth, no login. |
@@ -87,6 +87,7 @@ These shipped after the original scope was locked. Listed here so the document t
 | 25 | **Game-show (light) and neon game-night (dark) themes & motion** | Light theme: a cartoon game-show stage backdrop (curtain stripes, spotlights, marquee bulbs, stage floor), a purple title plaque, ink outlines on sticker shadows, amber accent. Dark theme: a synthwave backdrop (starry sky, sunset sun, a drawn two-layer skyline with Art Deco towers, spires, domes and water towers, glowing grid floor) with ambient loops (flickering windows, blinking beacons, twinkling stars, birds crossing the sun) that stop entirely under reduced motion, a lit "TRIVIA builder" neon sign that flickers on at Game Mode, glowing tube outlines (yellow accent, cyan ✓ success, pink ✗ danger), neon fonts (Tilt Neon, Monoton, Yellowtail). Both use A–E option pills and the same colour tokens via `light-dark()`, WCAG-checked. Motion is budgeted per the inventory in `style.css`; all movement respects `prefers-reduced-motion`. | Every screen reads in both themes; options lift on hover; with reduced motion on nothing slides, only fades. |
 | 26 | **Couch-play aids** | Toolbar with text size (90–150%, persisted), theme toggle (Auto/Light/Dark, persisted), a `?` shortcut list per screen, and fullscreen. `A`–`E` select options alongside `1`–`5`. "Question N of M" progress on in-game screens; a draining answer-timer bar with a "⏰ Hurry!" state for the last 5 seconds; a `P` / Pause button that freezes the answer timer; Scoreboard contestant podiums (lit score display, team number, points awarded this question) with a 👑 Leading tag; a Final Scores finale: a podium with a floating crown on the winner, a graveyard of crooked R.I.P. tombstones with epitaphs and ghosts for dead last, and superlative title chips in the ranked table (ties share a step). | Text size and theme survive a reload; `?` opens the list and blocks `Enter` while open; `B` selects the second option; the timer bar turns to Hurry! at 5s; `P` pauses and resumes the timer. |
 | 27 | **Reveal flair & room record** | Competition reveals get a verdict stamp that slams down with a random quip (a neon sign that also flickers on in dark), a one-time shake of the question card on a wrong answer, and a pulse on the correct option. The store tracks the room's streak, best streak, graded/correct counts and missed questions; a 🔥 streak badge shows from 2 in a row. Final Scores shows a room title by accuracy, the best streak, a collapsible list of missed questions, and confetti when someone scored. BACK undoes the question's effect on the record. Confetti and movement are skipped under reduced motion. | A wrong answer stamps, shakes, and resets the streak; BACK then restores the previous streak; Final Scores lists each missed question with its answer. |
+| 28 | **Question Builder & playlists** | A **Question Builder** screen (from Game Mode) with a question bank and playlists stored as JSON in `data/`. Create, edit and delete questions of every type with type-aware fields, server-side validation matching the CSV rules, known categories plus user-made ones, and media preview. A question can belong to many playlists by reference. Playlists are created, renamed, deleted, set to **Shuffle** or **Play in order** (↑/↓ reorder), filled by bulk add, and exported as CSV. **Import a CSV** copies `/import` rows into the bank (deduped by question + answer + attachment) as a new playlist. Game Mode lists playlists above CSVs; an ordered playlist plays in saved order. | A question saved in two playlists shows the same edit in both; an ordered playlist starts on its first unplayed question; re-importing a CSV adds 0 new questions; an exported playlist CSV parses back to the same questions. |
 
 ---
 
@@ -101,10 +102,11 @@ Explicitly NOT required for v1. Protects against scope creep.
 | 3 | ~~"Multiple Choice Media" question type~~ | *Now in scope (Feature 17): any question type — including Multiple Choice — can carry question and per-option media, so a separate type isn't needed.* |
 | 4 | Multi-user / auth | No login, accounts, or multiple concurrent users — single host on localhost. |
 | 5 | Persistent scoreboard storage | No saving of past game results or scoreboards. |
-| 6 | All-questions browse/view page | A page listing every question in a file. |
-| 7 | Playlists | Building a play set from selected/manually-created questions. |
-| 8 | In-app question authoring | Creating new questions inside the app (and syncing them to an all-questions view). |
-| 9 | Play-from-playlist mode | Play mode reading from a saved playlist rather than a CSV. |
+| 6 | ~~All-questions browse/view page~~ | *Now in scope (Feature 28): the builder's All questions list.* |
+| 7 | ~~Playlists~~ | *Now in scope (Feature 28).* |
+| 8 | ~~In-app question authoring~~ | *Now in scope (Feature 28).* |
+| 9 | ~~Play-from-playlist mode~~ | *Now in scope (Feature 28): playlists appear in the Game Mode dropdown.* |
+| 10 | Uploading media files | The builder takes media URLs only; it does not store uploaded images, video or audio. |
 
 ---
 
