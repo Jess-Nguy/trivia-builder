@@ -1,7 +1,7 @@
 import { reactive } from 'vue';
 
 // Eight default player colors (matching the wireframe palette).
-const PLAYER_COLORS = [
+export const PLAYER_COLORS = [
   '#5b9bd5', '#ffd966', '#f4a6b0', '#92d36e',
   '#b39ddb', '#f48fb1', '#4db6ac', '#ffb74d',
 ];
@@ -16,7 +16,10 @@ function shuffle(arr) {
 }
 
 // Normalize a string for exact-match comparison (trim + lowercase).
-const norm = (s) => String(s ?? '').trim().toLowerCase();
+export const norm = (s) => String(s ?? '').trim().toLowerCase();
+
+// Longest typed answer a phone may send (the server trims to the same length).
+const MAX_TYPED = 80;
 
 // localStorage key for custom team/user names, so they survive page reloads
 // and carry across rounds.
@@ -89,6 +92,8 @@ const DEFAULT_SETTINGS = {
   recordPoints: false,
   recordHints: false,
   hintsSubtract: false,
+  // Teams answer on their phones (competition mode only); see multiplayer.js.
+  phones: false,
   // The category names selected for the last game, so the filter is restored
   // when reopening the same file. Empty means "no saved selection" (play all).
   categories: [],
@@ -107,6 +112,7 @@ function loadSettings() {
       recordPoints: !!obj.recordPoints,
       recordHints: !!obj.recordHints,
       hintsSubtract: !!obj.hintsSubtract,
+      phones: !!obj.phones,
       categories: Array.isArray(obj.categories) ? obj.categories.map((c) => String(c)) : [],
     };
   } catch {
@@ -181,6 +187,13 @@ export const store = reactive({
   qPoints: {},
   qHints: {},
 
+  // Phone play: each team's locked answer this question, playerId ->
+  // { choice, text, correct }. `choice` indexes shownOptions (null for a typed
+  // answer); `correct` starts as an exact match and the host can flip it on the
+  // Answer Reveal. Phones may only lock in while `answersOpen`.
+  teamAnswers: {},
+  answersOpen: false,
+
   // --- Derived ---
   get currentQuestion() {
     return this.questions[this.index] || null;
@@ -190,6 +203,11 @@ export const store = reactive({
   // for older saved settings that predate the mode toggle.
   get isCompetition() {
     return this.settings.mode !== 'showcasing';
+  },
+  // Teams answer on their phones and are graded one by one, so the room-wide
+  // selection, verdict stamp and streak record don't apply.
+  get phonePlay() {
+    return this.isCompetition && !!this.settings.phones;
   },
   // Whether the current question can be auto-graded. True only when the answer
   // is an exact option match (Multiple Choice) or TRUE/FALSE (True or False) —
@@ -211,7 +229,7 @@ export const store = reactive({
   },
   // No points may be awarded this question (a gradable question answered wrong).
   get pointsLocked() {
-    return this.isGradable && this.isCorrect === false;
+    return !this.phonePlay && this.isGradable && this.isCorrect === false;
   },
   // Max points awardable to a single player this question (the question's value).
   get pointCap() {
@@ -393,6 +411,8 @@ export const store = reactive({
     this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
+    this.teamAnswers = {};
+    this.answersOpen = false;
     this.record = freshRecord();
     this.lastGrade = null;
     this.screen = 'question';
@@ -409,6 +429,7 @@ export const store = reactive({
   },
 
   submitQuestion(selectedAnswer = null) {
+    this.answersOpen = false;
     this.selectedAnswer = selectedAnswer;
     this.gradeReveal();
     // The Answer Reveal screen is now showing this question — record it as
@@ -419,7 +440,7 @@ export const store = reactive({
 
   gradeReveal() {
     this.lastGrade = null;
-    if (!this.isGradable) return;
+    if (!this.isGradable || this.phonePlay) return;
     const r = this.record;
     this.lastGrade = { ...r, missed: [...r.missed] };
     r.graded += 1;
@@ -445,8 +466,49 @@ export const store = reactive({
     this.screen = 'question';
   },
 
+  openAnswers() {
+    this.answersOpen = true;
+  },
+
+  // Lock in a team's answer from a phone: `{ n, choice }` picks an option by
+  // its shown position, `{ n, text }` is a typed answer. The first answer per
+  // team wins; anything for another question or after answers close is
+  // dropped. Returns whether it was accepted.
+  receiveAnswer(playerId, { n, choice, text }) {
+    const q = this.currentQuestion;
+    if (!q || !this.answersOpen || n !== this.index) return false;
+    if (!this.players.some((p) => p.id === playerId) || this.teamAnswers[playerId]) return false;
+    let answer;
+    if (Number.isInteger(choice)) {
+      const opt = this.shownOptions[choice];
+      if (!opt) return false;
+      answer = { choice, text: opt.text };
+    } else if (typeof text === 'string' && text.trim() && !this.shownOptions.length) {
+      answer = { choice: null, text: text.trim().slice(0, MAX_TYPED) };
+    } else {
+      return false;
+    }
+    answer.correct = !!answer.text && norm(answer.text) === norm(q.currentAnswer);
+    this.teamAnswers[playerId] = answer;
+    return true;
+  },
+
+  // Host override on the Answer Reveal: mark a team's answer right or wrong.
+  setTeamCorrect(playerId, correct) {
+    const a = this.teamAnswers[playerId];
+    if (a) a.correct = !!correct;
+  },
+
   // From the Answer Reveal screen: go to scoreboard, or skip to next question.
+  // With phone play, each team marked correct is pre-awarded the question's
+  // points (and the rest set to 0) for the host to check.
   afterAnswer() {
+    if (this.phonePlay && this.settings.recordPoints) {
+      for (const p of this.players) {
+        const target = this.teamAnswers[p.id]?.correct ? this.pointCap : 0;
+        this.awardPoints(p.id, target - (this.qPoints[p.id] || 0));
+      }
+    }
     if (this.scoreboardEnabled) {
       this.screen = 'scoreboard';
     } else {
@@ -476,6 +538,7 @@ export const store = reactive({
 
   // End the game early — jump to Final Scores with the tally so far.
   endGame() {
+    this.answersOpen = false;
     this.screen = 'final';
   },
 
@@ -487,8 +550,11 @@ export const store = reactive({
       this.shownOptions = [];
       this.qPoints = {};
       this.qHints = {};
+      this.teamAnswers = {};
+      this.answersOpen = false;
       this.screen = 'question';
     } else {
+      this.answersOpen = false;
       this.screen = 'final';
     }
   },
@@ -503,6 +569,8 @@ export const store = reactive({
     this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
+    this.teamAnswers = {};
+    this.answersOpen = false;
     this.screen = 'gameMode';
   },
 });

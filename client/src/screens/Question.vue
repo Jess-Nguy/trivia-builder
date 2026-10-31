@@ -4,6 +4,7 @@ import { store } from '../store.js';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
 import GameProgress from '../components/GameProgress.vue';
+import { party } from '../multiplayer.js';
 
 const LETTERS = 'ABCDE';
 
@@ -38,6 +39,9 @@ const displayOptions = ref([]);
 function buildOptions() {
   const cur = q.value;
   if (!cur) return (displayOptions.value = []);
+  // Back from the Answer Reveal: keep the same order so the letters phones
+  // locked in still point at the same options.
+  if (store.shownOptions.length) return (displayOptions.value = store.shownOptions);
   if (cur.type === 'True or False') displayOptions.value = cur.options; // fixed TRUE/FALSE order
   else if (cur.type === 'Multiple Choice') displayOptions.value = shuffle(cur.options);
   else displayOptions.value = []; // Single Choice has no clickable options
@@ -47,9 +51,14 @@ function buildOptions() {
 
 const hasHint = computed(() => !!q.value?.hint);
 // Showcasing mode is present-only: options are shown for context but not chosen,
-// and the action button reveals the answer rather than submitting a guess.
-const selectable = computed(() => store.isCompetition);
-const submitLabel = computed(() => (store.isCompetition ? 'SUBMIT' : 'REVEAL ANSWER'));
+// and the action button reveals the answer rather than submitting a guess. With
+// phone play the teams choose on their phones, so the host only reveals.
+const selectable = computed(() => store.isCompetition && !store.phonePlay);
+const submitLabel = computed(() => (selectable.value ? 'SUBMIT' : 'REVEAL ANSWER'));
+
+// Which teams have locked in on their phones.
+const lockedCount = computed(() => Object.keys(store.teamAnswers).length);
+const allLocked = computed(() => store.players.length > 0 && lockedCount.value === store.players.length);
 
 function startTimer() {
   clearTimer();
@@ -89,6 +98,7 @@ function clearDelay() {
 function beginAnswering() {
   clearDelay();
   phase.value = 'answering';
+  if (store.phonePlay) store.openAnswers();
   startTimer();
 }
 // Skip the reading delay (Space) — jump straight to answering.
@@ -217,6 +227,20 @@ const mmss = computed(() => {
       </div>
 
       <p v-if="hintShown" class="hint-bubble">💡 {{ q.hint }}</p>
+
+      <div v-if="store.phonePlay" class="phone-status" aria-live="polite">
+        <span class="phone-status-head">
+          {{ allLocked ? '🔒 Everyone is locked in!' : `📱 ${lockedCount} of ${store.players.length} locked in` }}
+          <span class="hint-text">· join with code {{ party.code }}</span>
+        </span>
+        <span
+          v-for="p in store.players"
+          :key="p.id"
+          class="phone-chip"
+          :class="{ 'is-locked': store.teamAnswers[p.id] }"
+          :style="{ '--team': p.color }"
+        >{{ store.teamAnswers[p.id] ? '✓' : '…' }} {{ p.name }}</span>
+      </div>
 
       <div class="q-actions">
         <button v-if="hasHint" class="btn btn-orange" @click="toggleHint">💡 {{ hintShown ? 'HIDE HINT' : 'SHOW HINT' }} <kbd>H</kbd></button>

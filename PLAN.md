@@ -185,6 +185,23 @@ See SCOPE §4 Feature 28.
 
 ---
 
+## Phase 12 — Phone play (built)
+
+See SCOPE §4 Feature 29.
+
+**Tasks**
+- **Relay** (`server/game.js`): a `GameHub` with one room per server and a 4-letter code. Only a loopback connection can host. Phones join with the code and a token and pick a team. The hub forwards answers to the host, crediting the phone's own team, and sends each phone the host's state with every other team's answer removed. `attachGameSocket` serves it on `/ws/game` on Vite's and Express's HTTP servers.
+- **API guard** (`server/apiHandler.js`): `/api/...` returns 403 to non-loopback clients; `GET /api/lan` gives the LAN addresses for the join URL.
+- **Host** (`client/src/multiplayer.js`): connects when phone play is ticked, publishes a snapshot of the store (answer included only from the reveal on), and feeds phone answers into `store.receiveAnswer`.
+- **Store**: `settings.phones`, `teamAnswers`, `answersOpen`, `receiveAnswer`, `setTeamCorrect`; `afterAnswer` pre-awards points; phone play skips the room-wide grade.
+- **Screens**: Game Mode join panel (`JoinPanel.vue`, QR from `qrcode`); Question lock-in chips and REVEAL ANSWER; Answer Reveal team verdicts with `1`–`8` override; phone app at `/play` (`client/src/phone/PhoneApp.vue`).
+- `npm run party` = dev server with `--host`.
+
+**Tests:** `test/game.test.js` (relay), `test/store-phones.test.js` (store).
+**Verify:** `npm run party`, tick phone play, join from two phones on different teams, answer differently, reveal: each phone shows its own verdict; flip one with `1`; NEXT pre-fills the Scoreboard with the question's points for the team marked right.
+
+---
+
 ## Suggested commit checkpoints
 
 One commit per phase (`feat: phase N — <name>`), so the history reads as real incremental progress, not a one-shot dump.

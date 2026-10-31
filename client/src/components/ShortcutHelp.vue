@@ -16,6 +16,7 @@ const SHORTCUTS = {
   answer: [
     ['Enter', 'Next'],
     ['← or Backspace', 'Back to the question'],
+    ['1–8', 'Flip a team\'s phone answer right or wrong'],
   ],
   scoreboard: [
     ['1–8', 'Select a team'],

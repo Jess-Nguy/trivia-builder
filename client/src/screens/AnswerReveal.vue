@@ -4,6 +4,7 @@ import { store } from '../store.js';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
 import GameProgress from '../components/GameProgress.vue';
+import { answerLabel } from '../multiplayer.js';
 
 const LETTERS = 'ABCDE';
 
@@ -17,7 +18,13 @@ const choiceOptions = computed(() =>
 );
 
 // Correct/wrong banner only shows for auto-gradable (competition) questions.
-const graded = computed(() => store.isGradable);
+// With phone play each team gets its own verdict instead.
+const graded = computed(() => store.isGradable && !store.phonePlay);
+
+function toggleTeam(p) {
+  const a = store.teamAnswers[p.id];
+  if (a) store.setTeamCorrect(p.id, !a.correct);
+}
 const correct = computed(() => store.isCorrect);
 
 const norm = (s) => String(s ?? '').trim().toLowerCase();
@@ -52,6 +59,9 @@ function back() {
 }
 function onKey(e) {
   if (e.key === 'Enter') next();
+  // 1–8 flip that team's phone answer between right and wrong.
+  const n = parseInt(e.key, 10);
+  if (store.phonePlay && !Number.isNaN(n) && n >= 1 && n <= store.players.length) toggleTeam(store.players[n - 1]);
   // Backspace or ArrowLeft go back to the question.
   if (e.key === 'Backspace' || e.key === 'ArrowLeft') {
     e.preventDefault();
@@ -99,6 +109,26 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
     </div>
 
     <div class="answer-body explanation reveal-hero" style="--i: 2" v-if="q.explanation">{{ q.explanation }}</div>
+
+    <div v-if="store.phonePlay" class="team-answers reveal-hero" style="--i: 3">
+      <p class="hint-text">Phone answers · click a team or press its number to flip right/wrong</p>
+      <button
+        v-for="(p, i) in store.players"
+        :key="p.id"
+        type="button"
+        class="team-answer"
+        :class="store.teamAnswers[p.id] ? (store.teamAnswers[p.id].correct ? 'is-right' : 'is-wrong') : 'is-none'"
+        :style="{ '--team': p.color }"
+        :disabled="!store.teamAnswers[p.id]"
+        :aria-pressed="store.teamAnswers[p.id] ? store.teamAnswers[p.id].correct : undefined"
+        @click="toggleTeam(p)"
+      >
+        <span class="badge">{{ i + 1 }}</span>
+        <span class="team-answer-name">{{ p.name }}</span>
+        <span class="team-answer-text">{{ store.teamAnswers[p.id] ? answerLabel(store.teamAnswers[p.id]) : 'No answer' }}</span>
+        <span class="team-answer-mark">{{ store.teamAnswers[p.id] ? (store.teamAnswers[p.id].correct ? '✓ Right' : '✗ Wrong') : '—' }}</span>
+      </button>
+    </div>
 
     <div class="options answer-options" v-if="isChoice">
       <div
