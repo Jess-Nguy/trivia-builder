@@ -217,11 +217,6 @@ export const store = reactive({
   get pointCap() {
     return this.currentQuestion?.points ?? 0;
   },
-  // Hints still available to distribute this question (taken minus already assigned).
-  get hintsRemaining() {
-    const assigned = Object.values(this.qHints).reduce((a, b) => a + b, 0);
-    return this.hintsTakenThisQuestion - assigned;
-  },
   get scoreboardEnabled() {
     // Showcasing always stops at the Manual Scoreboard so the host can hand out
     // points for fun; competition stops only when there's something to record.
@@ -472,9 +467,9 @@ export const store = reactive({
     const p = this.players.find((x) => x.id === playerId);
     if (!p) return;
     const cur = this.qHints[playerId] || 0;
-    // Can't assign more hints than were taken this question, nor go below 0.
-    if (delta > 0 && this.hintsRemaining <= 0) return;
-    const next = Math.max(0, cur + delta);
+    // Each player who saw the hint can be charged for it, so the cap is per
+    // player: [0, hints taken this question].
+    const next = Math.min(this.hintsTakenThisQuestion, Math.max(0, cur + delta));
     p.hints += next - cur;
     this.qHints[playerId] = next;
   },

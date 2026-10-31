@@ -66,7 +66,7 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 ## Phase 4 — Question & Answer Reveal screens
 
 **Tasks** (per SCOPE §4 Features 6–10, 12)
-- Common header: categories, question counter, timer slot, HINT? button only when `hint` is non-empty (reveals hint; increments the per-question hints-taken count + the hint tally if hint-recording on).
+- Common header: categories, question counter, timer slot, SHOW HINT / HIDE HINT toggle only when `hint` is non-empty (the first show counts the hint for this question; hiding and re-showing doesn't count it again).
 - **Multiple Choice:** render non-empty options as `1)…5)`, selectable by click or number key; option order randomizable.
 - **True or False:** hardcode TRUE/FALSE as the numbered options.
 - **Single Choice:** no options.
@@ -94,7 +94,7 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 
 **Tasks** (per SCOPE §4 Feature 13)
 - Header labels: `Award points: <question Points>` and `Hint assignment: <hints taken this question>`.
-- After the Answer Reveal, show one card per player with `+/-` points (default award = question's `Points`) and `+/-` hint count.
+- After the Answer Reveal, show one card per player with `+/-` points (default award = question's `Points`) and `+/-` hint count. Each player is capped separately (up to the question's `Points`, and up to the hints taken), so several players can get the same award or hint charge.
 - "record points" toggles the points control; "record hints" toggles the hint control.
 - **Skip this screen entirely if both record flags are off.**
 - **Keyboard scoring:** number keys `1–8` select the active player; up/down (or `+`/`-`) adjust their points by the question's point value; a separate key pair adjusts their hint count; Enter = NEXT.
