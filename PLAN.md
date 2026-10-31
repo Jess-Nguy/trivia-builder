@@ -122,7 +122,7 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 **Tasks**
 - Edge cases: empty `/import`, malformed CSV, requesting more questions than exist (already clamped), media URL that fails to load.
 - Basic styling to match the wireframe layout (cards, big readable question text for couch viewing).
-- Two themes: game-show stage (light) and neon game night (dark), with colour tokens, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
+- Two themes: pixel arcade (light) and neon game night (dark), with colour tokens, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
 - Couch-play aids: toolbar (text size, theme, `?` shortcut list, fullscreen), letter keys, question progress, timer bar, leader tag, ranked final scores, timer pause; stage backdrop, title plaque, and contestant podiums on Scoreboard and Final Scores.
 - README: how to drop a CSV in `/import`, the required columns, and `npm run dev`.
 - Confirm the Definition of Done checklist in SCOPE.md.

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
+import AppName from '../components/AppName.vue';
 import WriteQuestion, { hasDraft } from './WriteQuestion.vue';
 
 // A player's phone: join the host's room, pick a team, then follow the host's
@@ -181,7 +182,7 @@ onUnmounted(() => {
 <template>
   <main class="phone" :style="myTeam ? { '--team': myTeam.color } : null">
     <header class="phone-head">
-      <span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span>
+      <AppName />
       <span v-if="myTeam" class="phone-team-tag">{{ myTeam.name }}</span>
     </header>
 

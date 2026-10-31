@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { store } from '../store.js';
+import AppName from '../components/AppName.vue';
 import Media from '../components/Media.vue';
 import EndGameButton from '../components/EndGameButton.vue';
 import GameProgress from '../components/GameProgress.vue';
@@ -180,7 +181,7 @@ const mmss = computed(() => {
   <div class="panel" v-if="q">
     <EndGameButton />
     <div class="top-row">
-      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
+      <div class="plaque"><AppName /></div>
       <GameProgress />
       <div v-if="isReading" class="timer reading-timer">📖 Reading… {{ delayRemaining }}</div>
       <div v-else-if="store.settings.timer > 0" class="timer-wrap">
