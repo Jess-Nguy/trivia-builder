@@ -2,6 +2,8 @@
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { store } from '../store.js';
 import { fetchFiles, fetchQuestions, fetchBackgroundAudio, fetchLibrary, fetchPlaylist } from '../api.js';
+import { startParty, stopParty } from '../multiplayer.js';
+import JoinPanel from '../components/JoinPanel.vue';
 
 // Label for questions that carry no category, so they remain playable when
 // filtering is active rather than being silently dropped from the pool.
@@ -42,7 +44,12 @@ const form = reactive({
   recordPoints: false,
   recordHints: false,
   hintsSubtract: false,
+  phones: false,
 });
+
+// Phone play only grades in competition mode; showcasing has no answers to send.
+const phonesOn = computed(() => form.phones && form.mode === 'competition');
+watch(phonesOn, (on) => (on ? startParty() : stopParty()));
 
 // A question's categories, falling back to the Uncategorized bucket.
 function questionCats(q) {
@@ -132,6 +139,7 @@ onMounted(async () => {
   form.recordPoints = saved.recordPoints;
   form.recordHints = saved.recordHints;
   form.hintsSubtract = saved.hintsSubtract;
+  form.phones = saved.phones;
 
   // Restore the team count to cover any names saved from a previous session, so
   // reload-persisted names stay visible instead of being trimmed away. Only an
@@ -323,7 +331,14 @@ function startGame() {
       <label><input type="checkbox" v-model="form.recordPoints" /> record points</label>
       <label><input type="checkbox" v-model="form.recordHints" /> record how many hints taken</label>
       <label><input type="checkbox" v-model="form.hintsSubtract" /> hints subtracts points</label>
+      <label>
+        <input type="checkbox" v-model="form.phones" :disabled="form.mode !== 'competition'" />
+        📱 teams answer on their phones
+        <span v-if="form.mode !== 'competition'" class="hint-text">(competition mode only)</span>
+      </label>
     </div>
+
+    <JoinPanel v-if="phonesOn" :num-teams="form.numPlayers" />
 
     <p v-if="loading" class="hint-text">Loading questions…</p>
     <p v-if="loaded && loaded.problems.length" class="hint-text">

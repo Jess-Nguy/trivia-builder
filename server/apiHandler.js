@@ -14,6 +14,7 @@ import {
   importCsv,
   playlistCsv,
 } from './library.js';
+import { isLoopback, lanAddresses, network } from './game.js';
 
 const MAX_BODY = 1024 * 1024;
 
@@ -51,6 +52,12 @@ export async function apiMiddleware(req, res, next) {
   if (!p.startsWith('/api/')) return next();
 
   res.setHeader('Content-Type', 'application/json');
+  // Phones on the LAN load the page and the game socket, never the API: it
+  // returns answers and writes the question bank.
+  if (!isLoopback(req.socket.remoteAddress)) {
+    res.statusCode = 403;
+    return res.end(JSON.stringify({ error: 'The API is only available on the host computer.' }));
+  }
   const send = (code, obj) => {
     res.statusCode = code;
     res.end(JSON.stringify(obj));
@@ -65,6 +72,7 @@ export async function apiMiddleware(req, res, next) {
 
     if (p === '/api/health') return send(200, { ok: true });
     if (p === '/api/files') return send(200, { files: listFiles() });
+    if (p === '/api/lan') return send(200, { enabled: network.lanEnabled, addresses: lanAddresses() });
     if (p === '/api/background-audio') return send(200, { tracks: listAudioTracks() });
     if (p.startsWith('/api/files/')) {
       const name = decodeURIComponent(p.slice('/api/files/'.length));

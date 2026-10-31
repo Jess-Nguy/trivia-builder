@@ -23,6 +23,8 @@
      sticker shadow (user-requested hover highlight); buttons press to 0.97;
      score values pop 200ms when they change; colours change in 150ms.
    Progress: question progress and the answer timer bar move linearly.
+   Phone play: TV lock-in chips and team verdicts only change colour (150ms).
+     The phone's own hero is its reveal verdict (PhoneApp.vue, 400ms once).
    Cut: the "?" medallion pop on the Question screen (the card entering already
      carries that moment) and the Final Scores trophy medallion (the podiums carry it).
    Final Scores confetti: one 2-4.5s burst when someone scored, then removed.
@@ -695,6 +697,71 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--control); widt
   padding: 10px 18px;
   margin: 0 0 20px;
 }
+
+/* Phone play: join panel (Game Mode), lock-in chips (Question) and each team's
+   verdict (Answer Reveal). Verdicts carry a ✓/✗ label, not just colour. */
+.join-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  margin: 16px 0;
+  padding: 16px;
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 5px 0 var(--shadow);
+}
+/* Always dark-on-white so phone cameras can read it in either theme. */
+.join-qr { width: 200px; background: #ffffff; border-radius: 10px; padding: 6px; }
+.join-qr svg { display: block; width: 100%; height: auto; }
+.join-info { flex: 1; min-width: 220px; }
+.join-info p { margin: 0; }
+.join-step { color: var(--text-muted); font-size: 15px; }
+.join-url { font-size: 20px; font-weight: 600; margin-bottom: 10px !important; word-break: break-all; }
+.join-code { font-size: 48px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent-text); }
+.join-teams { list-style: none; padding: 0; margin: 10px 0 0; columns: 2; font-size: 16px; }
+.join-teams li { display: flex; justify-content: space-between; gap: 8px; padding-right: 16px; }
+.join-count { font-variant-numeric: tabular-nums; }
+
+.phone-status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }
+.phone-status-head { width: 100%; font-size: 20px; font-weight: 600; }
+.phone-chip {
+  padding: 4px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+.phone-chip.is-locked { background: var(--team); color: var(--on-accent); font-weight: 700; }
+
+.team-answers { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.team-answer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: inherit;
+  font-size: 18px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 3px solid var(--ink);
+  border-left: 12px solid var(--team);
+  border-radius: 14px;
+  padding: 6px 14px 6px 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+.team-answer:disabled { cursor: default; color: var(--text-muted); }
+.team-answer .badge { width: 34px; height: 34px; }
+.team-answer-name { font-weight: 700; min-width: 8em; }
+.team-answer-text { flex: 1; }
+.team-answer-mark { font-weight: 700; white-space: nowrap; }
+.team-answer.is-right .team-answer-mark { color: var(--success-text); }
+.team-answer.is-wrong .team-answer-mark { color: var(--danger); }
+.team-answer:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 .q-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
 

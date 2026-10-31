@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { apiMiddleware } from './apiHandler.js';
+import { attachGameSocket, network } from './game.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
@@ -19,6 +20,9 @@ if (fs.existsSync(clientDist)) {
   app.get('*', (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
 }
 
-app.listen(PORT, () => {
+// Listens on every interface, so phones on the same network can join.
+const server = app.listen(PORT, () => {
   console.log(`Trivia Builder running on http://localhost:${PORT}`);
 });
+attachGameSocket(server);
+network.lanEnabled = true;

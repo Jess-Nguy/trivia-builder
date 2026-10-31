@@ -22,6 +22,10 @@ npm run dev                   # starts the app on http://localhost:5173
 `npm run dev` runs the Vite dev server, which also serves the API (`/api/...`) as
 middleware — a single process on one port, no separate backend to start.
 
+For **phone play** (see *Phone play* below), start with `npm run party` instead. It
+is the same dev server, also listening on your network so phones on the same Wi-Fi
+can reach it.
+
 ### Tests
 
 ```bash
@@ -35,12 +39,20 @@ playlist membership, and ordered play. It sets `TRIVIA_DATA_DIR` to a temp folde
 so your real `data/` bank and the committed CSV are never touched. The ordered-play
 test imports `client/src/store.js`, so run `npm --prefix client install` first.
 
+`test/game.test.js` covers the phone-play relay (room code, who may host, what each
+phone sees, which team an answer counts for) with fake connections, and
+`test/store-phones.test.js` covers locking in, grading and pre-awarded points in
+the store (it also needs the client install).
+
 ### Production
 
 ```bash
 npm run build          # builds the client into client/dist
 npm start              # Express serves the built app + API on http://localhost:3001
 ```
+
+Express listens on every network interface, so phone play works from `npm start`
+without an extra flag.
 
 ## Question Builder
 
@@ -213,6 +225,9 @@ exact (with prose in `Explanation`) is what unlocks grading.
   the bottom-right corner of every screen with a **mute toggle** and a **volume
   slider**.
 - **Number of questions, timer, and the record/subtract checkboxes** work as before.
+- **📱 teams answer on their phones** (competition only): opens a room and shows a
+  QR code, the join address and a 4-letter room code, with how many phones have
+  joined each team. See *Phone play*.
 - **Settings are remembered:** the form's choices — mode, team/question counts,
   timer, the record/subtract checkboxes, **the selected file, and the category
   selection** — are saved to localStorage when you start a game and restored as the
@@ -274,6 +289,40 @@ stuck player-mute (whose control only shows in fullscreen) can't leave it silent
 "name this song" questions where even the video would spoil it, tag the YouTube link
 with `#audio` to play it as audio only with the video fully hidden (see
 *Question Attachments* above).
+
+## Phone play
+
+Kahoot/Jackbox-style: the TV stays the main screen, and each team answers on phones.
+
+1. Start the app with `npm run party` (or `npm start`), on a computer on the same
+   Wi-Fi as the phones.
+2. On Game Mode, tick **📱 teams answer on their phones**. Phones scan the QR code
+   (or open the address and type the room code), then pick a team. Any number of
+   phones can join one team.
+3. Start the game. Once the reading delay ends, phones show the option letters
+   (A–E, or TRUE/FALSE) or, for Single Choice, a text box. **The first answer from a
+   team locks it in** for the whole team. The Question screen shows who's locked
+   in; press `Enter` (or let the timer run out) to reveal.
+4. The Answer Reveal lists every team's answer, pre-marked ✓ when it exactly matches
+   the answer (ignoring case and leading or trailing spaces). Click a team or press its number (`1`–`8`)
+   to flip it right/wrong, e.g. for a typo in a typed answer. Phones show their own
+   verdict.
+5. NEXT pre-fills the Scoreboard: teams marked right get the question's points (with
+   **record points** on), the rest get 0. Adjust as usual; hints are still charged by
+   hand.
+
+What phones see: the question text and option letters/text (picture options say
+"Picture on the TV"; media only plays on the TV). They never get the correct
+answer before the reveal, and never see another team's pick. The room-wide verdict
+stamp and streak record are off in phone play, since each team gets its own verdict.
+
+Phones reconnect on their own after sleeping or reloading, back to the same team.
+The room code lasts until the server restarts, so reloading the host page keeps
+everyone in.
+
+**Security:** only the computer running the app can host a room or use `/api/...`
+(question bank, CSVs, answers). Requests from other devices get `403`, so phones can
+load the page and the game socket only.
 
 **Background music auto-pause:** when a question (or one of its options) has its own
 YouTube/video/audio media on screen, the background music **pauses automatically**
