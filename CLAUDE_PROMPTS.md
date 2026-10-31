@@ -75,3 +75,21 @@ Another feature needs to added to use `Option 1 Attachment`, `Option 2 Attachmen
 - theme: colour tokens with light + dark values (`light-dark()`, follows the OS, `data-theme` override), contrast-checked; screen-change fade, Answer Reveal and Final Scores hero animations, 150ms press feedback; all movement respects `prefers-reduced-motion`. Motion inventory lives at the top of `client/src/style.css`. APPLIED.
 
 - restyle: make it creative in a cartoony game-show way (reference: neon quiz boards with lettered option pills), animate the hover highlight, and add UX features for playing locally. Added the game-show theme, A–E option pills with hover lift, a toolbar (text size, theme, `?` shortcuts, fullscreen), question progress, a draining timer bar with a Hurry! state, a Scoreboard leader tag, and ranked Final Scores. APPLIED.
+
+- restyle round 2 (references: cartoon game-show stage with numbered contestant podiums and score displays, an ocean quiz screen with a title plaque and pause button, a quiz-night stage): added a static stage backdrop, a title plaque on every screen, Scoreboard contestant podiums with lit score displays, a rising 1-2-3 podium on Final Scores, and a P / Pause control for the answer timer. APPLIED.
+
+- take a look at how https://halloween-heist.vais-mahendran.workers.dev/ does its animation and flair, and its modes for games. Add the UI now; add the modes to PLAN.md for now. UI: verdict stamp with quips, wrong-answer shake, correct-option pulse, streak badge, Final Scores room title, missed-question list, confetti. APPLIED. Modes (hard/type-it mode with override, put-in-order type, study mode, length presets) planned in PLAN.md Phase 10.
+
+- theme the animation and flair like the Halloween Heist site but in a neon game-night trivia style (references: a "TRIVIA GAME NIGHT" neon sign on a brick wall with ✓/✗ circles, and a synthwave "TRIVIA night" grid). Reskinned to neon: brick wall + mountain ridge + grid floor backdrop, a lit "TRIVIA builder" sign plaque that flickers on at Game Mode, glowing tube outlines in dark mode (yellow accent, cyan ✓, pink ✗), the verdict stamp as a neon sign that slams and flickers on, neon confetti. APPLIED.
+
+- make the background identical to one of the synthwave "Trivia Night" references; the background palette is too plain. Replaced the brick-wall backdrop with the sunset scene (starry sky, large gradient sun, skyline, glowing grid floor), the same in light and dark. APPLIED.
+
+- make the neon lights changes be the dark theme and have the light be what it was previously. Dark keeps the neon look and synthwave scene; light returns to the cartoon game-show stage (stage backdrop, purple plaque, amber accent, Fredoka, plain stamp slam, no flicker). APPLIED.
+
+- animation like the Halloween Heist site: make the background move (building lights, flying things across the moon) and make the buildings look drawn, not code rectangles. Dark scene now has a two-layer skyline (Art Deco, spire, slant, dome, water-tower and parapet silhouettes), ~24 flickering windows, 3 blinking beacons, twinkling stars and 3 birds flying across the sun; all loops stop under reduced motion. The grid floor stays still on purpose. APPLIED.
+
+- the image for the question is hard to read in dark mode; the leaderboard's lead wording is small, make text and things bigger. Images now sit on a white backing card in dark mode; Scoreboard names, LED scores, podium numbers, +/− buttons and the award/keys lines are larger, the leader tag is a yellow "👑 LEADING" pill, and the podiums lay out in one centred row. APPLIED.
+
+- make the corner buttons larger when in game mode selection. The top-right toolbar (text size, theme, keys, fullscreen) is enlarged on the Game Mode screen only. APPLIED.
+
+- make the winning screen more animated: a floating crown above the winner, dead last as losers with RIP gravestones or something funny; be creative. Added a crown that drops onto each winner and floats, a graveyard of crooked tombstones (epitaphs, bobbing ghosts) for dead last instead of a podium, superlative title chips (Champion, No Hints Needed, So Close, Six Feet Under, Hint Goblin, Goose Egg Club), and fixed tied last-place teams being shown on the silver podium. APPLIED.

@@ -51,6 +51,10 @@ const AUDIO_KEY = 'trivia-audio';
 
 const DEFAULT_AUDIO = { link: '', title: '', volume: 30, muted: false };
 
+function freshRecord() {
+  return { streak: 0, bestStreak: 0, graded: 0, correct: 0, missed: [] };
+}
+
 function loadAudio() {
   try {
     const obj = JSON.parse(localStorage.getItem(AUDIO_KEY));
@@ -156,6 +160,13 @@ export const store = reactive({
   // so the UI can warn that only the remaining questions were served. Holds
   // { requested, served } or null.
   exhaustedNotice: null,
+
+  // Room-wide record of auto-graded questions this game: current and best run of
+  // correct answers, totals for the Final Scores accuracy title, and the misses
+  // to revisit. `lastGrade` snapshots the record before the latest reveal so
+  // BACK can undo it.
+  record: freshRecord(),
+  lastGrade: null,
 
   questions: [],
   index: 0,
@@ -386,6 +397,8 @@ export const store = reactive({
     this.shownOptions = [];
     this.qPoints = {};
     this.qHints = {};
+    this.record = freshRecord();
+    this.lastGrade = null;
     this.screen = 'question';
   },
 
@@ -401,10 +414,28 @@ export const store = reactive({
 
   submitQuestion(selectedAnswer = null) {
     this.selectedAnswer = selectedAnswer;
+    this.gradeReveal();
     // The Answer Reveal screen is now showing this question — record it as
     // played so it won't be served in future games.
     this.markPlayed(this.settings.fileName, this.currentQuestion);
     this.screen = 'answer';
+  },
+
+  gradeReveal() {
+    this.lastGrade = null;
+    if (!this.isGradable) return;
+    const r = this.record;
+    this.lastGrade = { ...r, missed: [...r.missed] };
+    r.graded += 1;
+    if (this.isCorrect) {
+      r.correct += 1;
+      r.streak += 1;
+      r.bestStreak = Math.max(r.bestStreak, r.streak);
+    } else {
+      r.streak = 0;
+      const q = this.currentQuestion;
+      r.missed.push({ question: q.question, answer: q.currentAnswer, said: this.selectedAnswer });
+    }
   },
 
   // Step back from the Answer Reveal to the question — e.g. the host pressed
@@ -412,6 +443,8 @@ export const store = reactive({
   // it's re-recorded if the host submits again.
   backToQuestion() {
     this.unmarkPlayed(this.settings.fileName, this.currentQuestion);
+    if (this.lastGrade) this.record = this.lastGrade;
+    this.lastGrade = null;
     this.selectedAnswer = null;
     this.screen = 'question';
   },

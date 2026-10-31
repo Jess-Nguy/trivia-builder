@@ -54,7 +54,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel">
     <EndGameButton />
     <div class="top-row">
-      <div class="brand">Trivia Builder</div>
+      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
       <GameProgress />
       <button class="btn btn-yellow next-btn" @click="next">NEXT &gt;</button>
     </div>
@@ -70,17 +70,22 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       <div
         v-for="(p, i) in store.players"
         :key="p.id"
-        class="player-card"
+        class="player-card podium"
         :class="{ active: activeIdx === i }"
         @click="activeIdx = i"
       >
-        <div class="avatar" :style="{ background: p.color }">{{ i + 1 }}</div>
-        <div v-if="leaderIds.has(p.id)" class="leader-tag">👑 Leading</div>
-        <div class="player-name">{{ p.name }}</div>
+        <div class="podium-name">{{ p.name }}</div>
+        <div class="leader-tag" :class="{ 'is-hidden': !leaderIds.has(p.id) }">👑 Leading</div>
+        <div class="podium-screen">
+          <span class="led" :key="p.points">{{ p.points }}</span>
+        </div>
+        <div class="podium-body" :style="{ background: p.color }">
+          <span class="podium-num">{{ i + 1 }}</span>
+        </div>
 
         <div v-if="showPoints" class="counter">
           <button @click.stop="addPoints(p, -1)" :disabled="(store.qPoints[p.id] || 0) <= 0">−</button>
-          <span class="val" :key="p.points">{{ p.points }} pts</span>
+          <span class="val" :key="store.qPoints[p.id] || 0">+{{ store.qPoints[p.id] || 0 }} pts</span>
           <button @click.stop="addPoints(p, 1)" :disabled="(store.qPoints[p.id] || 0) >= pointValue">+</button>
         </div>
         <div v-if="showHints" class="counter">

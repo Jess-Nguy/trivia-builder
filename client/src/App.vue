@@ -9,6 +9,7 @@ import FinalScores from './screens/FinalScores.vue';
 import Toolbar from './components/Toolbar.vue';
 import ShortcutHelp from './components/ShortcutHelp.vue';
 import BackgroundAudio from './components/BackgroundAudio.vue';
+import StageBackdrop from './components/StageBackdrop.vue';
 
 const screens = {
   gameMode: GameMode,
@@ -20,6 +21,7 @@ const screens = {
 </script>
 
 <template>
+  <StageBackdrop />
   <div class="app">
     <Toolbar />
     <BackgroundAudio />

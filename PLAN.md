@@ -122,8 +122,8 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 **Tasks**
 - Edge cases: empty `/import`, malformed CSV, requesting more questions than exist (already clamped), media URL that fails to load.
 - Basic styling to match the wireframe layout (cards, big readable question text for couch viewing).
-- Game-show restyle: colour tokens with dark mode, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
-- Couch-play aids: toolbar (text size, theme, `?` shortcut list, fullscreen), letter keys, question progress, timer bar, leader tag, ranked final scores.
+- Two themes: game-show stage (light) and neon game night (dark), with colour tokens, WCAG contrast checks, and a motion budget (inventory comment at the top of `client/src/style.css`).
+- Couch-play aids: toolbar (text size, theme, `?` shortcut list, fullscreen), letter keys, question progress, timer bar, leader tag, ranked final scores, timer pause; stage backdrop, title plaque, and contestant podiums on Scoreboard and Final Scores.
 - README: how to drop a CSV in `/import`, the required columns, and `npm run dev`.
 - Confirm the Definition of Done checklist in SCOPE.md.
 
@@ -148,6 +148,25 @@ Built after the initial v1 was complete (see SCOPE §4 Features 17–23). Each s
 
 **Deliverable:** The enhancements above, each verifiable against its SCOPE acceptance row.
 **Verify:** Per-feature checks in SCOPE §4 Features 17–23 pass; the sample CSVs in `/import` load and play with media, categories, custom names, and reading delays; a background track loops, mutes/adjusts volume, and pauses for question video.
+
+---
+
+## Phase 10 — Game modes (planned, not built)
+
+Ideas taken from the [Halloween Heist trivia site](https://halloween-heist.vais-mahendran.workers.dev/), adapted for a host running the game on a TV. Its UI flair (verdict stamp with quips, wrong-answer shake, streak counter, rank title, missed-question review, confetti) already shipped; these are the modes still to build.
+
+**Tasks**
+- **Hard mode (type it):** a Game Mode toggle that hides the options on Multiple Choice and True or False questions, so the room has to recall the answer. The host types what the room said (or presses `No idea`) and the app grades it with forgiving matching: ignore case, punctuation and a leading "the/a/an", and accept a small typo distance. The Answer Reveal gets an **"Actually, they were right / wrong"** button that flips the grade, because typed answers will be right in other words. A flip must also flip the streak, accuracy and missed list (the store's `lastGrade` snapshot already supports undoing a grade). Single Choice questions behave as today.
+- **Put-in-order question type:** a new CSV `Type` of `Order`, where `Option 1..5` hold the items in the correct order and the Question screen shows them shuffled. Pressing an item's letter (or clicking it) adds it to the next slot, clicking a placed item removes it, and `Lock it in` / `Reset` act on the whole order. The reveal shows each slot right or wrong and "3 of 4 in the right spot"; it counts as correct only when every slot matches. Validation: at least 2 items.
+- **Study mode:** a third Game Mode choice next to Competition and Showcasing that pages through the selected file and categories as flashcards: question first, then `Space` flips to the answer and explanation. No scoring, no timer, and it does **not** mark questions as played, so studying never shrinks the game pool.
+- **Length presets:** `10`, `20` and `All` quick buttons beside "How many questions?", clamped to the filtered pool like the number field.
+
+**Open questions before building**
+- Hard mode: should showcasing mode allow it, or is it competition-only? The reference grades every typed answer, but showcasing never grades.
+- Order type: what does `Current Answer` hold, the joined order (`A → B → C`) or a copy of Option 1? It is still a required column.
+
+**Deliverable:** Each mode behind its own Game Mode control, with SCOPE acceptance rows added when built.
+**Verify:** Hard mode grades "the pacific ocean" as correct for `Pacific Ocean` and the override flips the streak; an `Order` row shuffles, locks, and reports per-slot results; Study mode pages through without changing the unplayed count.
 
 ---
 

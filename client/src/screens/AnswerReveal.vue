@@ -37,6 +37,12 @@ const verdictText = computed(() =>
 );
 const optionMark = { correct: '✓', 'chosen-wrong': '✗' };
 
+// A random quip on the verdict stamp, picked once per reveal.
+const GOOD = ['Nailed it!', 'Big brain!', 'Called it!', 'On the money!', 'Too easy!'];
+const BAD = ['Nope!', 'So close!', 'Not even!', 'Objection!', 'Denied!'];
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+const quip = pick(correct.value ? GOOD : BAD);
+
 function next() {
   store.afterAnswer();
 }
@@ -60,7 +66,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
   <div class="panel answer" v-if="q">
     <EndGameButton />
     <div class="top-row">
-      <div class="brand">Trivia Builder</div>
+      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
       <GameProgress />
       <div class="reveal-nav">
         <button class="btn back-btn" @click="back">&lt; BACK</button>
@@ -68,7 +74,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
       </div>
     </div>
 
-    <div class="q-card">
+    <div class="q-card" :class="{ shake: graded && !correct }">
       <div
         class="medallion reveal-hero"
         :class="graded ? (correct ? 'medal-correct' : 'medal-wrong') : ''"
@@ -80,8 +86,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKey));
 
     <Media v-if="q.attachment" :src="q.attachment" />
 
-    <div v-if="graded" class="verdict reveal-hero" :class="correct ? 'verdict-correct' : 'verdict-wrong'">
-      {{ correct ? '✓' : '✗' }} {{ verdictText }}
+    <div v-if="graded" class="verdict-row">
+      <div class="stamp" role="status" :class="correct ? 'stamp-correct' : 'stamp-wrong'">
+        <span class="stamp-label">{{ correct ? '✓' : '✗' }} {{ verdictText }}</span>
+        <span class="stamp-quip">{{ quip }}</span>
+      </div>
     </div>
 
     <div class="answer-banner reveal-hero" style="--i: 1">

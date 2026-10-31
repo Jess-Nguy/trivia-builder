@@ -12,6 +12,8 @@ const selected = ref(null);
 const hintShown = ref(false);
 const remaining = ref(0);
 let timerId = null;
+// Host pause (P or the Pause button) freezes the answer timer while the room argues.
+const paused = ref(false);
 
 // Reading-delay phase: when a question has `delaySecs > 0`, we first show the
 // question (and media) with options/buttons hidden so the host can read it
@@ -53,7 +55,9 @@ function startTimer() {
   clearTimer();
   if (store.settings.timer > 0) {
     remaining.value = store.settings.timer;
+    paused.value = false;
     timerId = setInterval(() => {
+      if (paused.value) return;
       remaining.value -= 1;
       if (remaining.value <= 0) {
         clearTimer();
@@ -112,6 +116,10 @@ function showHint() {
     store.takeHint();
   }
 }
+function togglePause() {
+  if (store.settings.timer > 0 && !isReading.value) paused.value = !paused.value;
+}
+
 function submit() {
   clearTimer();
   const chosen = selected.value != null ? displayOptions.value[selected.value].text : null;
@@ -129,6 +137,7 @@ function onKey(e) {
   }
   if (e.key === 'Enter') return submit();
   if (e.key.toLowerCase() === 'h' && hasHint.value) return showHint();
+  if (e.key.toLowerCase() === 'p') return togglePause();
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const n = parseInt(e.key, 10);
   if (!Number.isNaN(n) && n >= 1) return selectOption(n - 1);
@@ -162,11 +171,16 @@ const mmss = computed(() => {
   <div class="panel" v-if="q">
     <EndGameButton />
     <div class="top-row">
-      <div class="brand">Trivia Builder</div>
+      <div class="plaque"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
       <GameProgress />
       <div v-if="isReading" class="timer reading-timer">📖 Reading… {{ delayRemaining }}</div>
-      <div v-else-if="store.settings.timer > 0" class="timer" :class="{ 'is-low': timeLow }">
-        <span v-if="timeLow">⏰ Hurry!</span> {{ mmss }}
+      <div v-else-if="store.settings.timer > 0" class="timer-wrap">
+        <button class="tool-btn" :title="paused ? 'Resume timer (P)' : 'Pause timer (P)'" @click="togglePause">
+          {{ paused ? '▶ Resume' : '⏸ Pause' }}
+        </button>
+        <div class="timer" :class="{ 'is-low': timeLow && !paused, 'is-paused': paused }">
+          <span v-if="paused">⏸ Paused</span><span v-else-if="timeLow">⏰ Hurry!</span> {{ mmss }}
+        </div>
       </div>
       <div v-else class="timer-spacer"></div>
     </div>

@@ -205,7 +205,7 @@ function startGame() {
 
 <template>
   <div class="panel">
-    <div class="brand">Trivia Builder</div>
+    <div class="plaque flicker-on"><span class="plaque-main">Trivia</span> <span class="plaque-script">builder</span></div>
     <h1 class="title">Game Mode</h1>
 
     <div class="form-row">
