@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "A localhost web app that imports trivia questions from a CSV and runs a host-controlled couch-party trivia night with manual scoring.",
   "type": "module",
+  "workspaces": [
+    "tools/*"
+  ],
   "scripts": {
     "dev": "npm --prefix client run dev",
     "party": "npm --prefix client run dev -- --host",

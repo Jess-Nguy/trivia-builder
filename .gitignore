@@ -18,3 +18,6 @@ client/.vite/
 
 # Local Claude settings (machine-specific)
 .claude/settings.local.json
+
+# Harvester cache (raw API responses, OpenTDB session token)
+tools/harvester/.cache/
