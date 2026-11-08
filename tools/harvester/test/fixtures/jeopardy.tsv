@@ -1,0 +1,5 @@
+round	clue_value	daily_double_value	category	comments	answer	question	air_date	notes
+1	100	0	FAKE LAKES & RIVERS		Test clue about a made-up river	the Testwater	2000-01-01	
+1	200	0	TEST SONGS	(Host: an example comment.)	Test clue naming \"Fake Hit\" by a test band	\"Fake Hit\"	2000-01-01	
+2	400	0	EMPTY		Test clue with no response		2000-01-01	
+3	0	0	PLACEHOLDER		Test clue with a trailing backslash\	placeholder answer\	2000-01-01	

@@ -1,0 +1,7 @@
+SELECT ?element ?elementLabel ?symbol WHERE {
+  ?element wdt:P31 wd:Q11344 ;
+           wdt:P246 ?symbol ;
+           wdt:P1086 ?number .
+  FILTER(?number >= 1 && ?number <= 118)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}

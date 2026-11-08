@@ -7,6 +7,12 @@ scoring. No database: CSV files in `/import` plus two JSON files in `data/`.
 
 See [SCOPE.md](SCOPE.md) for the full feature scope and [PLAN.md](PLAN.md) for the build plan.
 
+The repo is becoming a monorepo of trivia tools. The app lives at the root for now
+(`server/`, `client/`); standalone tools are npm workspaces under `tools/`:
+
+- [tools/harvester](tools/harvester/README.md): pulls questions from Open Trivia DB,
+  Wikidata, OpenTriviaQA and a Jeopardy clue dataset into `import/` CSVs.
+
 ## Requirements
 
 - Node.js 18+ (developed on Node 24)
@@ -43,6 +49,9 @@ test imports `client/src/store.js`, so run `npm --prefix client install` first.
 phone sees, which team an answer counts for) with fake connections, and
 `test/store-phones.test.js` covers locking in, grading and pre-awarded points in
 the store (it also needs the client install).
+
+`npm test` also runs `tools/*/test/*.test.js`: the harvester's parsers, duplicate
+check and CSV writer, against fixtures with no network calls.
 
 ### Production
 
@@ -163,6 +172,16 @@ question timer delay by secs
 
 Rows that fail validation are skipped and reported on the Game Mode screen; they
 don't crash the app.
+
+### Harvesting questions from the internet
+
+`npm run harvest -- <source>` writes a ready-to-play CSV into `import/` from Open
+Trivia DB (`opentdb`), Wikidata (`wikidata`: capitals, flag pictures, element
+symbols), OpenTriviaQA (`opentriviaqa`) or the Jeopardy clue dataset (`jeopardy`).
+It drops questions already in the bank or in `import/`, and checks every row
+with the same rules as above before writing. See
+[tools/harvester/README.md](tools/harvester/README.md) for sources, licences and
+options.
 
 ### Background music
 

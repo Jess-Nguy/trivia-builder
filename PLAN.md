@@ -237,6 +237,25 @@ Players add questions from their phones on topics they know, to stump the rest o
 
 ---
 
+## Phase 14: Trivia harvester and monorepo (step 1 built)
+
+More questions without typing them: a standalone tool that pulls from open sources and writes `import/` CSVs, as the first package of a monorepo of trivia tools. See SCOPE §4 Feature 31.
+
+**Step 1: `tools/harvester` (built)**
+- Root `package.json` gets `"workspaces": ["tools/*"]`; the app stays at the root. `npm run harvest -- <source>` runs the CLI.
+- Sources: `opentdb` (API, session token cached so reruns get unseen questions, 1 call per 5 s), `wikidata` (SPARQL recipes in `src/sources/wikidata/*.rq`: capitals, flags with Commons images, element symbols), `opentriviaqa` (local clone), `jeopardy` (local TSV from jwolle1/jeopardy_clue_dataset, personal use only, reservoir-sampled).
+- Shared pipeline: map categories onto `KNOWN_CATEGORIES`, drop duplicates with `findDuplicate` against the bank and every `import/` CSV (picture questions by attachment + answer), credit the source in `Explanation`, validate with `parseCsv`, write.
+- The output is a normal import CSV, so the app needs no changes.
+
+**Step 2: move the app to `apps/builder/` (planned, its own PR)**
+- `git mv server client test data import apps/builder/` as a rename-only commit, then fix paths: root scripts become `npm -w`, the harvester imports the app as a workspace package, `client/vite.config.js` and `.claude/launch.json` paths are checked.
+- Decide first whether `data/` and `import/` move too or stay at the root as shared data for every tool.
+
+**Tests:** `tools/harvester/test/` (fixtures only, no network), run by the root `npm test`.
+**Verify:** `npm run harvest -- opentdb --amount 20`, pick the new file in Game Mode and play two questions; import it in the Builder, then run the same harvest again and see the earlier rows reported as duplicates.
+
+---
+
 ## Suggested commit checkpoints
 
 One commit per phase (`feat: phase N — <name>`), so the history reads as real incremental progress, not a one-shot dump.
