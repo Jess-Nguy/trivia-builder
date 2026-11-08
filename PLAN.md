@@ -4,6 +4,8 @@ A phased timeline an AI coding agent can follow top-to-bottom. Each phase lists 
 
 **Stack:** Node + Express (backend) · Vue 3 + Vite (frontend) · CSV files in `/import` and JSON files in `data/`, no database.
 
+**Paths:** since Phase 14 the app lives in `apps/builder/`, so `server/`, `client/` and `test/` in the phases below are under `apps/builder/`. `data/` and `import/` stay at the repo root.
+
 **Reference:** [SCOPE.md](SCOPE.md) is the source of truth for features and acceptance criteria. The sample data is `import/Trivia Mix - June 2 2026.csv`.
 
 ---
@@ -237,7 +239,7 @@ Players add questions from their phones on topics they know, to stump the rest o
 
 ---
 
-## Phase 14: Trivia harvester and monorepo (step 1 built)
+## Phase 14: Trivia harvester and monorepo (built)
 
 More questions without typing them: a standalone tool that pulls from open sources and writes `import/` CSVs, as the first package of a monorepo of trivia tools. See SCOPE §4 Feature 31.
 
@@ -247,12 +249,14 @@ More questions without typing them: a standalone tool that pulls from open sourc
 - Shared pipeline: map categories onto `KNOWN_CATEGORIES`, drop duplicates with `findDuplicate` against the bank and every `import/` CSV (picture questions by attachment + answer), credit the source in `Explanation`, validate with `parseCsv`, write.
 - The output is a normal import CSV, so the app needs no changes.
 
-**Step 2: move the app to `apps/builder/` (planned, its own PR)**
-- `git mv server client test data import apps/builder/` as a rename-only commit, then fix paths: root scripts become `npm -w`, the harvester imports the app as a workspace package, `client/vite.config.js` and `.claude/launch.json` paths are checked.
-- Decide first whether `data/` and `import/` move too or stay at the root as shared data for every tool.
+**Step 2: move the app to `apps/builder/` (built, its own PR)**
+- `git mv server client test apps/builder/` as a rename-only commit, then a commit fixing the paths that broke.
+- `data/` and `import/` stay at the root as shared data for every tool; `IMPORT_DIR` and `DATA_DIR` point there.
+- Workspaces: `apps/builder` (`@trivia/builder`), `apps/builder/client` and `tools/*`, so one root `npm install` covers everything. The harvester imports `@trivia/builder/server/...`.
+- Root scripts (`dev`, `party`, `build`, `start`, `test`, `harvest`) keep their names.
 
 **Tests:** `tools/harvester/test/` (fixtures only, no network), run by the root `npm test`.
-**Verify:** `npm run harvest -- opentdb --amount 20`, pick the new file in Game Mode and play two questions; import it in the Builder, then run the same harvest again and see the earlier rows reported as duplicates.
+**Verify:** after a fresh `npm install`, `npm run dev`, `npm run party`, `npm run build && npm start` and `npm test` all work from the root. `npm run harvest -- opentdb --amount 20`, pick the new file in Game Mode and play two questions; import it in the Builder, then run the same harvest again and see the earlier rows reported as duplicates.
 
 ---
 
