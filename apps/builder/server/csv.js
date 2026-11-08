@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import Papa from 'papaparse';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-export const IMPORT_DIR = path.resolve(__dirname, '..', 'import');
+// import/ and data/ live at the repo root, shared with the tools in tools/.
+export const IMPORT_DIR = path.resolve(__dirname, '..', '..', '..', 'import');
 
 // Reserved CSV that holds background-music tracks (link,title), not questions.
 // Excluded from the question-file list and read separately (see listAudioTracks).

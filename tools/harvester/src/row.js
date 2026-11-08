@@ -1,4 +1,4 @@
-import { COLUMNS } from '../../../server/csv.js';
+import { COLUMNS } from '@trivia/builder/server/csv.js';
 
 // The app shows at most five options (Option 1..5).
 const MAX_DISTRACTORS = 4;
