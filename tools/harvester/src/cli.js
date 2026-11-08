@@ -6,10 +6,11 @@ import { IMPORT_DIR } from '../../../server/csv.js';
 import { toRow } from './row.js';
 import { loadExisting, dropDuplicates } from './dedupe.js';
 import { validateRows, freePath, writeRows } from './write.js';
+import opentdb from './sources/opentdb.js';
 
 const CACHE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.cache');
 
-const SOURCES = {};
+const SOURCES = { opentdb };
 
 const USAGE = `Usage: npm run harvest -- <source> [options]
 
