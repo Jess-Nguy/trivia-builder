@@ -8,10 +8,11 @@ import { loadExisting, dropDuplicates } from './dedupe.js';
 import { validateRows, freePath, writeRows } from './write.js';
 import opentdb from './sources/opentdb.js';
 import opentriviaqa from './sources/opentriviaqa.js';
+import jeopardy from './sources/jeopardy.js';
 
 const CACHE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.cache');
 
-const SOURCES = { opentdb, opentriviaqa };
+const SOURCES = { opentdb, opentriviaqa, jeopardy };
 
 const USAGE = `Usage: npm run harvest -- <source> [options]
 
