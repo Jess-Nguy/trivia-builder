@@ -25,9 +25,10 @@
 | **Language(s)** | JavaScript (Node.js + browser) |
 | **Framework(s)** | Express (backend API) · Vue 3 + Vite (frontend) |
 | **Database** | None. CSV files in `/import` (overwritten or created new), plus `data/questions.json` and `data/playlists.json` for the Question Builder's bank and playlists. |
-| **External APIs / Services** | None required. Media questions may reference external image/video/audio URLs. |
+| **External APIs / Services** | None required. Media questions may reference external image/video/audio URLs. The optional harvester (Feature 31) calls Open Trivia DB and the Wikidata query service. |
 | **Hosting / Deploy** | Localhost only (`npm run dev`); `npm run party` also lets phones on the same Wi-Fi join (Feature 29). Not deployed publicly — single-user personal use. |
 | **Other tools** | A CSV parser (e.g. `papaparse` or `csv-parse`) on the backend. No auth, no login. |
+| **Repo layout** | npm workspaces: the app in `apps/builder/` (its Vue client is a workspace too), tools in `tools/`. `data/` and `import/` stay at the root, shared by all. |
 
 ---
 

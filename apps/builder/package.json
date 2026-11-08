@@ -1,0 +1,16 @@
+{
+  "name": "@trivia/builder",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A localhost web app that imports trivia questions from a CSV and runs a host-controlled couch-party trivia night with manual scoring.",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "papaparse": "^5.4.1",
+    "ws": "^8.22.1"
+  }
+}

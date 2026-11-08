@@ -1,4 +1,4 @@
-import { KNOWN_CATEGORIES } from '../../../server/library.js';
+import { KNOWN_CATEGORIES } from '@trivia/builder/server/library.js';
 
 const FALLBACK = 'General Knowledge';
 const byLower = new Map(KNOWN_CATEGORIES.map((c) => [c.toLowerCase(), c]));

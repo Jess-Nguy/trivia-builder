@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 const CSV_NAME = '316 - Total Trivia Mix w_ hints - ALL.csv';
 
 // The bank and a copy of the CSV live in a temp folder: the real data/ is never
@@ -15,7 +15,7 @@ const CSV_NAME = '316 - Total Trivia Mix w_ hints - ALL.csv';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'trivia-builder-test-'));
 const DATA_DIR = path.join(TMP, 'data');
 const CSV_PATH = path.join(TMP, CSV_NAME);
-fs.copyFileSync(path.join(ROOT, 'import', CSV_NAME), CSV_PATH);
+fs.copyFileSync(path.join(REPO_ROOT, 'import', CSV_NAME), CSV_PATH);
 process.env.TRIVIA_DATA_DIR = DATA_DIR;
 
 const lib = await import('../server/library.js');

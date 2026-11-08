@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import Papa from 'papaparse';
-import { IMPORT_DIR } from '../../../server/csv.js';
-import { getLibrary, findDuplicate } from '../../../server/library.js';
+import { IMPORT_DIR } from '@trivia/builder/server/csv.js';
+import { getLibrary, findDuplicate } from '@trivia/builder/server/library.js';
 
 const clean = (v) => (v == null ? '' : String(v).trim());
 const mediaKey = (attachment, answer) => `${clean(attachment).toLowerCase()} :: ${clean(answer).toLowerCase()}`;

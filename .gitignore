@@ -1,12 +1,12 @@
 # Dependencies
 node_modules/
-client/node_modules/
+apps/builder/client/node_modules/
 
 # Build output
-client/dist/
+apps/builder/client/dist/
 
 # Vite dev cache
-client/.vite/
+apps/builder/client/.vite/
 
 # OS / editor
 .DS_Store

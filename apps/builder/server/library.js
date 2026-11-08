@@ -7,7 +7,7 @@ import { COLUMNS, TYPES, parseCsv } from './csv.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // TRIVIA_DATA_DIR lets tests point the bank at a temp folder.
-export const DATA_DIR = path.resolve(process.env.TRIVIA_DATA_DIR || path.join(__dirname, '..', 'data'));
+export const DATA_DIR = path.resolve(process.env.TRIVIA_DATA_DIR || path.join(__dirname, '..', '..', '..', 'data'));
 const QUESTIONS_FILE = path.join(DATA_DIR, 'questions.json');
 const PLAYLISTS_FILE = path.join(DATA_DIR, 'playlists.json');
 

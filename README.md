@@ -7,11 +7,14 @@ scoring. No database: CSV files in `/import` plus two JSON files in `data/`.
 
 See [SCOPE.md](SCOPE.md) for the full feature scope and [PLAN.md](PLAN.md) for the build plan.
 
-The repo is becoming a monorepo of trivia tools. The app lives at the root for now
-(`server/`, `client/`); standalone tools are npm workspaces under `tools/`:
+The repo is a monorepo of trivia tools, each an npm workspace, all run from the root:
 
+- `apps/builder/`: this app (`server/`, `client/`, `test/`).
 - [tools/harvester](tools/harvester/README.md): pulls questions from Open Trivia DB,
   Wikidata, OpenTriviaQA and a Jeopardy clue dataset into `import/` CSVs.
+
+`data/` (question bank and playlists) and `import/` (CSVs) stay at the root, shared
+by the app and the tools.
 
 ## Requirements
 
@@ -20,9 +23,8 @@ The repo is becoming a monorepo of trivia tools. The app lives at the root for n
 ## Run it
 
 ```bash
-npm install                   # root (Express + CSV parser)
-npm --prefix client install   # client (Vue + Vite)
-npm run dev                   # starts the app on http://localhost:5173
+npm install    # every workspace: server, client and tools
+npm run dev    # starts the app on http://localhost:5173
 ```
 
 `npm run dev` runs the Vite dev server, which also serves the API (`/api/...`) as
@@ -38,17 +40,18 @@ can reach it.
 npm test               # node:test, no extra dependencies
 ```
 
-`test/library.test.js` runs the Question Builder against a copy of
+`apps/builder/test/library.test.js` runs the Question Builder against a copy of
 `import/316 - Total Trivia Mix w_ hints - ALL.csv`: importing it, saving every row
 back through the builder's validation, exporting a playlist and parsing it again,
 playlist membership, and ordered play. It sets `TRIVIA_DATA_DIR` to a temp folder,
 so your real `data/` bank and the committed CSV are never touched. The ordered-play
-test imports `client/src/store.js`, so run `npm --prefix client install` first.
+test imports `apps/builder/client/src/store.js`, which needs the client's packages
+from the root `npm install`.
 
-`test/game.test.js` covers the phone-play relay (room code, who may host, what each
+`apps/builder/test/game.test.js` covers the phone-play relay (room code, who may host, what each
 phone sees, which team an answer counts for) with fake connections, and
-`test/store-phones.test.js` covers locking in, grading and pre-awarded points in
-the store (it also needs the client install).
+`apps/builder/test/store-phones.test.js` covers locking in, grading and
+pre-awarded points in the store.
 
 `npm test` also runs `tools/*/test/*.test.js`: the harvester's parsers, duplicate
 check and CSV writer, against fixtures with no network calls.
@@ -56,7 +59,7 @@ check and CSV writer, against fixtures with no network calls.
 ### Production
 
 ```bash
-npm run build          # builds the client into client/dist
+npm run build          # builds the client into apps/builder/client/dist
 npm start              # Express serves the built app + API on http://localhost:3001
 ```
 
@@ -275,7 +278,7 @@ The app has two looks, one per theme. **Light** is a family-friendly pixel arcad
 
 **Flair on the reveal** (borrowed from the Halloween Heist trivia site): in competition, a graded answer gets a verdict stamp that slams down with a random quip (in dark it is a neon sign that also flickers on) ("Nailed it!", "Objection!"), a wrong answer shakes the question card once, and the correct option pulses. A "🔥 N in a row" badge appears beside the question progress once the room gets two graded answers right in a row. Final Scores adds a room title from the share of graded questions answered right (from "Better Luck Next Round" up to "Trivia Royalty"), the best streak, a collapsible "Questions to revisit" list of misses with the right answers, and a burst of confetti when someone scored. `< BACK` on the Answer Reveal undoes that question's effect on the streak and record.
 
-**Colour and contrast:** colours are tokens at the top of `client/src/style.css`, each with a light and a dark value via `light-dark()`, so the app needs Chrome 123+, Safari 17.5+ or Firefox 120+. Every text and button pair was checked against WCAG 2 (4.5:1 for text, 3:1 for large text and control edges). Keep new pairs on the tokens so they stay that way.
+**Colour and contrast:** colours are tokens at the top of `apps/builder/client/src/style.css`, each with a light and a dark value via `light-dark()`, so the app needs Chrome 123+, Safari 17.5+ or Firefox 120+. Every text and button pair was checked against WCAG 2 (4.5:1 for text, 3:1 for large text and control edges). Keep new pairs on the tokens so they stay that way.
 
 **Motion** is budgeted: one hero per screen (the question card and options arriving, the verdict and answer on Answer Reveal, the winner on Final Scores), a short fade between screens, the Final Scores podiums rising from the floor, a hover lift on pickable options, and press feedback on buttons. The inventory comment at the top of `style.css` lists each one; stay inside it. Everything that moves respects `prefers-reduced-motion`: fades stay, sliding and scaling stop.
 

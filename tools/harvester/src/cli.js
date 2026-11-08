@@ -2,7 +2,7 @@
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { IMPORT_DIR } from '../../../server/csv.js';
+import { IMPORT_DIR } from '@trivia/builder/server/csv.js';
 import { toRow } from './row.js';
 import { loadExisting, dropDuplicates } from './dedupe.js';
 import { validateRows, freePath, writeRows } from './write.js';

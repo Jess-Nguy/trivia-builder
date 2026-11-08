@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import Papa from 'papaparse';
-import { COLUMNS, parseCsv } from '../../../server/csv.js';
+import { COLUMNS, parseCsv } from '@trivia/builder/server/csv.js';
 
 const toCsv = (rows) => Papa.unparse(rows, { columns: COLUMNS }) + '\n';
 
