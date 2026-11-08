@@ -55,7 +55,7 @@ export function toQuestion(row) {
 
 /**
  * Stream the TSV and keep a uniform random sample of `size` usable clues
- * (reservoir sampling), so the 80 MB file never sits in memory as objects.
+ * (reservoir sampling), so the whole file never sits in memory as objects.
  * The file has no quoting, so lines split on tabs directly.
  */
 export async function sampleTsv(file, size, { category, random = Math.random } = {}) {

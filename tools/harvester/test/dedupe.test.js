@@ -1,4 +1,4 @@
-import { test, describe, after } from 'node:test';
+import { test, describe, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -56,23 +56,28 @@ describe('dropDuplicates', () => {
 });
 
 describe('loadExisting', () => {
-  test('reads the bank and every import CSV without changing the CSVs', () => {
+  // Blank Points: parseCsv would rewrite this file, loadExisting must not.
+  const csv = 'Question,Current Answer,Type,Points,Question Attachments\nCSV question?,No,Single Choice,,https://x.test/a.png\n';
+  const csvPath = path.join(IMPORT_DIR, 'old.csv');
+
+  beforeEach(() => {
     fs.writeFileSync(
       path.join(DATA_DIR, 'questions.json'),
       JSON.stringify([{ id: 'x', question: 'Bank question?', currentAnswer: 'Yes', attachment: '', categories: [] }]),
     );
-    // Blank Points: parseCsv would rewrite this file, loadExisting must not.
-    const csv = 'Question,Current Answer,Type,Points,Question Attachments\nCSV question?,No,Single Choice,,https://x.test/a.png\n';
-    const csvPath = path.join(IMPORT_DIR, 'old.csv');
     fs.writeFileSync(csvPath, csv);
     fs.writeFileSync(path.join(IMPORT_DIR, 'background audio.csv'), 'link,title\nhttps://x.test,Song\n');
+  });
 
-    const existing = loadExisting({ importDir: IMPORT_DIR });
-
-    assert.deepEqual(existing, [
+  test('reads the bank and every import CSV', () => {
+    assert.deepEqual(loadExisting({ importDir: IMPORT_DIR }), [
       { question: 'Bank question?', currentAnswer: 'Yes', attachment: '' },
       { question: 'CSV question?', currentAnswer: 'No', attachment: 'https://x.test/a.png' },
     ]);
+  });
+
+  test('leaves the import CSVs unchanged', () => {
+    loadExisting({ importDir: IMPORT_DIR });
     assert.equal(fs.readFileSync(csvPath, 'utf8'), csv);
   });
 });
