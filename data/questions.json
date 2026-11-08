@@ -6934,7 +6934,7 @@
     "id": "4e625568-3a9c-474a-b4f9-2d0f4fa27798",
     "question": "Name the video game this character is from.",
     "options": [],
-    "currentAnswer": "Tom Nook from Animal Crossing",
+    "currentAnswer": "Animal Crossing",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -6943,16 +6943,16 @@
     "attachment": "https://static0.polygonimages.com/wordpress/wp-content/uploads/2026/01/tom_nook_animal_crossing_new_horizons.jpg?w=1600&h=900&fit=crop",
     "points": 2,
     "hint": "A relaxing life-sim where a raccoon-like shopkeeper saddles you with a mortgage.",
-    "explanation": "",
+    "explanation": "This is Tom Nook from Animal Crossing",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-08T03:48:05.000Z"
   },
   {
     "id": "d7ae7994-1661-4873-beca-bf125b9c6b75",
     "question": "Name the video game this character is from.",
     "options": [],
-    "currentAnswer": "Mayor Lewis from Stardew Valley",
+    "currentAnswer": "Stardew Valley",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -6961,16 +6961,16 @@
     "attachment": "https://i.redd.it/0aj6n4ru3bec1.png",
     "points": 2,
     "hint": "A pixel-art farming game where you inherit your grandfather's old plot.",
-    "explanation": "",
+    "explanation": "This is Mayor Lewis from Stardew Valley",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-05T21:06:34.367Z"
   },
   {
     "id": "46299052-e9ad-43aa-a235-4fea703b1d08",
     "question": "Name the video game this character is from.",
     "options": [],
-    "currentAnswer": "Dr.Hakim from It takes two",
+    "currentAnswer": "It Takes Two",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -6979,16 +6979,16 @@
     "attachment": "https://static0.thegamerimages.com/wordpress/wp-content/uploads/2021/04/it-takes-two-dr-hakim.jpg?w=1200&h=628&fit=crop",
     "points": 2,
     "hint": "A co-op adventure about a couple turned into dolls, guided by a love-therapy book.",
-    "explanation": "",
+    "explanation": "This is Dr.Hakim from It Takes Two",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-08T03:48:05.000Z"
   },
   {
     "id": "453a3eff-86ed-4064-a6d7-fe3fa4221d05",
     "question": "Name the video game this character is from.",
     "options": [],
-    "currentAnswer": "Orange Mushroom from Maple Story",
+    "currentAnswer": "Maple Story",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -6997,16 +6997,16 @@
     "attachment": "https://pbs.twimg.com/profile_images/502636712376291328/JaSB1XwS_400x400.jpeg",
     "points": 2,
     "hint": "A smiling orange fungus that's an iconic low-level monster in a classic 2D side-scrolling Korean MMORPG.",
-    "explanation": "",
+    "explanation": "This is Orange Mushroom from Maple Story",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-08T03:48:05.000Z"
   },
   {
     "id": "f382dc15-ab06-48ff-89e0-8fb25c210428",
     "question": "Name the video game this character is from.",
     "options": [],
-    "currentAnswer": "Teemo from League of Legends",
+    "currentAnswer": "League of Legends",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -7015,16 +7015,16 @@
     "attachment": "https://static.wikia.nocookie.net/p__/images/e/e3/Teemo_Render_2.png/revision/latest?cb=20210407171219&path-prefix=protagonist",
     "points": 2,
     "hint": "A tiny hat-wearing scout who plants poisonous mushrooms in a wildly popular MOBA.",
-    "explanation": "",
+    "explanation": "This is Teemo from League of Legends",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-08T03:48:05.000Z"
   },
   {
     "id": "44329c5a-5805-4019-9964-dcba9fa82df3",
-    "question": "Name the video game this character is from.",
+    "question": "Name the first video game appearance this character is from.",
     "options": [],
-    "currentAnswer": "Rosalina from Super Mario Galaxy",
+    "currentAnswer": "Super Mario Galaxy",
     "categories": [
       "Games",
       "Meme/Trends"
@@ -7033,10 +7033,10 @@
     "attachment": "https://static0.gamerantimages.com/wordpress/wp-content/uploads/2025/11/mario-galaxy-movie-reveals-who-is-playing-rosalina-and-bowser-jr-game-rant-rosalina-satisfied.jpg?w=1600&h=900&fit=crop",
     "points": 2,
     "hint": "A tall, cosmic princess who watches over the star-like Lumas in a space-themed Mario platformer.",
-    "explanation": "",
+    "explanation": "This is Rosalina from Super Mario Galaxy",
     "delaySecs": 0,
     "createdAt": "2026-10-31T18:08:22.283Z",
-    "updatedAt": "2026-10-31T18:08:22.283Z"
+    "updatedAt": "2026-11-08T03:48:05.000Z"
   },
   {
     "id": "1f8e8df8-812c-4dbe-b0de-849fbcf344e5",
@@ -8135,5 +8135,35 @@
     "seenAt": "2026-10-31T20:23:47.270Z",
     "createdAt": "2026-10-31T20:23:26.753Z",
     "updatedAt": "2026-10-31T20:23:26.753Z"
+  },
+  {
+    "id": "ec0f8fbb-0680-4ec5-816d-2b7b45a66d78",
+    "question": "Is my birthday May 30?",
+    "options": [
+      {
+        "text": "TRUE",
+        "attachment": ""
+      },
+      {
+        "text": "FALSE",
+        "attachment": ""
+      }
+    ],
+    "currentAnswer": "TRUE",
+    "categories": [
+      "FRIENDS"
+    ],
+    "type": "True or False",
+    "attachment": "",
+    "points": 2,
+    "hint": "Matt",
+    "explanation": "",
+    "delaySecs": 0,
+    "source": "public",
+    "submittedBy": "Taco",
+    "authorToken": "c8ce46a5f451e17d220d476d",
+    "seenAt": "2026-11-05T20:59:18.065Z",
+    "createdAt": "2026-11-05T20:59:04.016Z",
+    "updatedAt": "2026-11-05T20:59:04.016Z"
   }
 ]
