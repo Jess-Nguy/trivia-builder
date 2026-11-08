@@ -1,0 +1,29 @@
+
+#Q Three of these animals hibernate. Which one does not?
+^ Sloth
+A Mouse
+B Sloth
+C Frog
+D Snake
+#Q Snakes are deaf.
+^ True
+A True
+B False
+
+
+#Q Which band recorded a song called Brontosaurus which includes the following verse:
+
+Now her daddys getting old
+And he seemed to lose control
+When the brontosaurus
+Stormed into the house to trap her.?
+^ ELO
+A ELO
+B Velvet Revolver
+C Velvet Underground
+D AFI
+
+#Q Broken block: the answer is missing from the options.
+^ Zebra
+A Horse
+B Donkey
