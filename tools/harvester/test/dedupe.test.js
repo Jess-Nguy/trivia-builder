@@ -33,6 +33,22 @@ describe('dropDuplicates', () => {
     assert.equal(dropped, 1);
   });
 
+  test('keeps picture questions that share text but not the picture', () => {
+    const flag = (country) => ({
+      question: 'Which country does this flag belong to?',
+      answer: country,
+      attachment: `https://x.test/${country}.svg`,
+    });
+    const { kept } = dropDuplicates([flag('Canada'), flag('Japan')], []);
+    assert.equal(kept.length, 2);
+  });
+
+  test('drops a picture question whose picture and answer already exist', () => {
+    const existing = [{ question: 'Name this flag', currentAnswer: 'Canada', attachment: 'https://x.test/Canada.svg' }];
+    const candidate = { question: 'Which country does this flag belong to?', answer: 'canada', attachment: 'https://x.test/Canada.svg' };
+    assert.equal(dropDuplicates([candidate], existing).dropped, 1);
+  });
+
   test('stops once limit questions are kept', () => {
     const { kept } = dropDuplicates([koala, otter], [], 1);
     assert.deepEqual(kept, [koala]);
@@ -43,10 +59,10 @@ describe('loadExisting', () => {
   test('reads the bank and every import CSV without changing the CSVs', () => {
     fs.writeFileSync(
       path.join(DATA_DIR, 'questions.json'),
-      JSON.stringify([{ id: 'x', question: 'Bank question?', currentAnswer: 'Yes', categories: [] }]),
+      JSON.stringify([{ id: 'x', question: 'Bank question?', currentAnswer: 'Yes', attachment: '', categories: [] }]),
     );
     // Blank Points: parseCsv would rewrite this file, loadExisting must not.
-    const csv = 'Question,Current Answer,Type,Points\nCSV question?,No,Single Choice,\n';
+    const csv = 'Question,Current Answer,Type,Points,Question Attachments\nCSV question?,No,Single Choice,,https://x.test/a.png\n';
     const csvPath = path.join(IMPORT_DIR, 'old.csv');
     fs.writeFileSync(csvPath, csv);
     fs.writeFileSync(path.join(IMPORT_DIR, 'background audio.csv'), 'link,title\nhttps://x.test,Song\n');
@@ -54,8 +70,8 @@ describe('loadExisting', () => {
     const existing = loadExisting({ importDir: IMPORT_DIR });
 
     assert.deepEqual(existing, [
-      { question: 'Bank question?', currentAnswer: 'Yes' },
-      { question: 'CSV question?', currentAnswer: 'No' },
+      { question: 'Bank question?', currentAnswer: 'Yes', attachment: '' },
+      { question: 'CSV question?', currentAnswer: 'No', attachment: 'https://x.test/a.png' },
     ]);
     assert.equal(fs.readFileSync(csvPath, 'utf8'), csv);
   });
