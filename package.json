@@ -11,7 +11,8 @@
     "party": "npm --prefix client run dev -- --host",
     "build": "npm --prefix client run build",
     "start": "node server/index.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js tools/*/test/*.test.js",
+    "harvest": "node tools/harvester/src/cli.js"
   },
   "dependencies": {
     "express": "^4.21.2",

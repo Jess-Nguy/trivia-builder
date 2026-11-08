@@ -4,6 +4,12 @@
   "version": "1.0.0",
   "description": "Pulls trivia questions from open sources and writes them as Trivia Builder import CSVs.",
   "type": "module",
+  "bin": {
+    "harvest": "src/cli.js"
+  },
+  "scripts": {
+    "harvest": "node src/cli.js"
+  },
   "dependencies": {
     "papaparse": "5.5.3"
   }
