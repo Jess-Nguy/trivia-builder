@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { IMPORT_DIR } from '../../../server/csv.js';
 import { toRow } from './row.js';
+import { loadExisting, dropDuplicates } from './dedupe.js';
 import { validateRows, freePath, writeRows } from './write.js';
 
 const CACHE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.cache');
@@ -53,11 +54,13 @@ async function main() {
     log: (m) => console.error(m),
   });
 
-  const rows = questions.slice(0, amount).map((q) => toRow(q, { credit: source.credit }));
+  const { kept, dropped } = dropDuplicates(questions, loadExisting(), amount);
+  const rows = kept.map((q) => toRow(q, { credit: source.credit }));
   const { valid, invalid } = validateRows(rows);
 
   console.log(`fetched:   ${questions.length}`);
   console.log(`skipped:   ${skipped.length} (source data unusable)`);
+  console.log(`duplicate: ${dropped} (already in the bank or import/)`);
   console.log(`invalid:   ${invalid.length} (rejected by the app's CSV rules)`);
   for (const { question, messages } of invalid) console.log(`  - ${question}: ${messages.join('; ')}`);
 
