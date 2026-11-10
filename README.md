@@ -18,7 +18,7 @@ by the app and the tools.
 
 ## Requirements
 
-- Node.js 18+ (developed on Node 24)
+- Node.js 18+ (developed on Node 24; run `nvm use` to pick up the version in `.nvmrc`)
 
 ## Run it
 
