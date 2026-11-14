@@ -14,6 +14,11 @@ const MAX_NAME = 24;
 const MAX_SUBMISSIONS = 20;
 // Phones may write questions whenever nobody is answering one.
 const SUBMIT_PHASES = new Set(['lobby', 'reveal', 'scores', 'final']);
+const MAX_CHAT = 200;
+// Messages kept per channel, sent to a phone when it joins or switches team.
+const CHAT_HISTORY = 50;
+// Shortest gap between one player's chat messages.
+const CHAT_GAP_MS = 500;
 // No I or O, so a code read off the TV can't be mistaken for 1 or 0.
 const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const TOKEN_RE = /^[A-Za-z0-9-]{8,64}$/;
@@ -49,7 +54,7 @@ const bank = { submitQuestion, categories: () => getLibrary().categories };
 // A connection is `{ local, send(obj) }`, so tests can drive the hub without
 // real sockets, and `library` can be swapped for a fake bank.
 export class GameHub {
-  constructor({ makeCode = randomCode, library = bank } = {}) {
+  constructor({ makeCode = randomCode, library = bank, now = Date.now } = {}) {
     this.makeCode = makeCode;
     this.library = library;
     this.code = null;
@@ -57,6 +62,10 @@ export class GameHub {
     this.state = null;
     this.phones = new Map(); // conn -> { token, name, team }
     this.submissions = new Map(); // token -> questions written this room
+    this.now = now;
+    this.chatId = 0;
+    this.chatLog = { all: [], teams: new Map() }; // team -> messages
+    this.lastChat = new Map(); // token -> time of last message
   }
 
   message(conn, raw) {
@@ -74,6 +83,7 @@ export class GameHub {
       case 'team': return this.pickTeam(conn, msg.team);
       case 'answer': return this.answer(conn, msg);
       case 'submit': return this.submit(conn, msg.question);
+      case 'chat': return this.chat(conn, msg);
     }
   }
 
@@ -109,6 +119,7 @@ export class GameHub {
     this.phones.set(conn, p);
     conn.send({ t: 'joined', code: this.code, categories: this.library.categories() });
     conn.send({ t: 'state', state: this.stateFor(p) });
+    this.sendChatHistory(conn, p);
     this.sendRoster();
   }
 
@@ -117,7 +128,45 @@ export class GameHub {
     if (!p) return;
     p.team = this.validTeam(team);
     conn.send({ t: 'state', state: this.stateFor(p) });
+    this.sendChatHistory(conn, p);
     this.sendRoster();
+  }
+
+  // Chat between phones on the `all` channel or the sender's own team channel.
+  // The sender's name and team come from the hub's record, never the message.
+  // The host gets nothing, so team talk never reaches the TV.
+  chat(conn, { channel, text }) {
+    const p = this.phones.get(conn);
+    if (!p || (channel !== 'all' && channel !== 'team')) return;
+    if (channel === 'team' && p.team == null) return;
+    const body = typeof text === 'string' ? text.trim().slice(0, MAX_CHAT) : '';
+    if (!body) return;
+    const at = this.now();
+    if (at - (this.lastChat.get(p.token) ?? -Infinity) < CHAT_GAP_MS) {
+      return conn.send({ t: 'chatError', error: 'Slow down a little.' });
+    }
+    this.lastChat.set(p.token, at);
+    const entry = { id: ++this.chatId, channel, name: p.name, token: p.token, text: body, at };
+    let log = this.chatLog.all;
+    if (channel === 'team') {
+      log = this.chatLog.teams.get(p.team) ?? [];
+      this.chatLog.teams.set(p.team, log);
+    }
+    log.push(entry);
+    if (log.length > CHAT_HISTORY) log.shift();
+    for (const [phone, other] of this.phones) {
+      if (channel === 'team' && other.team !== p.team) continue;
+      phone.send({ t: 'chat', message: chatFor(entry, other) });
+    }
+  }
+
+  sendChatHistory(conn, p) {
+    const team = p.team == null ? [] : this.chatLog.teams.get(p.team) ?? [];
+    conn.send({
+      t: 'chatHistory',
+      all: this.chatLog.all.map((m) => chatFor(m, p)),
+      team: team.map((m) => chatFor(m, p)),
+    });
   }
 
   // The team comes from the hub's record of this phone, never from the message,
@@ -186,6 +235,11 @@ export class GameHub {
     const total = new Set([...this.phones.values()].map((p) => p.token)).size;
     this.host.send({ t: 'roster', teams: byTeam, total });
   }
+}
+
+// A chat message as one phone sees it: `mine` instead of the sender's token.
+function chatFor({ token, ...rest }, viewer) {
+  return { ...rest, mine: token === viewer.token };
 }
 
 // Serve the phone-play socket on an existing HTTP server (Vite's in dev,

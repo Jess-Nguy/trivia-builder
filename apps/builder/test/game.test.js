@@ -287,6 +287,112 @@ describe('submitting questions', () => {
   });
 });
 
+describe('chat', () => {
+  let clock;
+  let owl;
+  let mate;
+  let fox;
+  const chats = (conn) => conn.sent.filter((m) => m.t === 'chat').map((m) => m.message);
+  beforeEach(() => {
+    clock = 0;
+    hub = new GameHub({ makeCode: () => CODE, library, now: () => (clock += 1000) });
+    host = fakeConn(true);
+    say(hub, host, { t: 'host' });
+    say(hub, host, { t: 'state', state: { teams: TEAMS, phase: 'lobby' } });
+    owl = fakeConn();
+    mate = fakeConn();
+    fox = fakeConn();
+    say(hub, owl, { t: 'join', name: 'Sam', code: CODE, token: TOKEN_A, team: 0 });
+    say(hub, mate, { t: 'join', name: 'Kim', code: CODE, token: 'player-cccc', team: 0 });
+    say(hub, fox, { t: 'join', name: 'Lee', code: CODE, token: TOKEN_B, team: 1 });
+  });
+
+  test('an all-players message reaches every phone', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi all' });
+    assert.equal(chats(fox).at(-1).text, 'hi all');
+    assert.equal(chats(mate).at(-1).text, 'hi all');
+  });
+
+  test('a team message reaches teammates only', () => {
+    say(hub, owl, { t: 'chat', channel: 'team', text: 'it is B' });
+    assert.equal(chats(mate).at(-1).text, 'it is B');
+    assert.equal(chats(fox).length, 0);
+  });
+
+  test('the host never receives chat', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi' });
+    say(hub, owl, { t: 'chat', channel: 'team', text: 'psst' });
+    assert.equal(host.sent.some((m) => m.t === 'chat'), false);
+  });
+
+  test('the sender name comes from the hub, not the message', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi', name: 'Mallory' });
+    assert.equal(chats(fox).at(-1).name, 'Sam');
+  });
+
+  test('only the sender sees its message as mine', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi' });
+    assert.equal(chats(owl).at(-1).mine, true);
+    assert.equal(chats(fox).at(-1).mine, false);
+  });
+
+  test('no phone receives another player\'s token', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi' });
+    assert.doesNotMatch(JSON.stringify(fox.sent), new RegExp(TOKEN_A));
+  });
+
+  test('text is trimmed and capped at 200 characters', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: `  ${'x'.repeat(300)}  ` });
+    assert.equal(chats(fox).at(-1).text.length, 200);
+  });
+
+  test('a blank message is dropped', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: '   ' });
+    assert.equal(chats(fox).length, 0);
+  });
+
+  test('a phone without a team cannot use the team channel', () => {
+    say(hub, owl, { t: 'team', team: null });
+    say(hub, owl, { t: 'chat', channel: 'team', text: 'psst' });
+    assert.equal(chats(mate).length, 0);
+  });
+
+  test('a phone that never joined cannot chat', () => {
+    say(hub, fakeConn(), { t: 'chat', channel: 'all', text: 'hi' });
+    assert.equal(chats(fox).length, 0);
+  });
+
+  test('messages closer together than 500ms are refused', () => {
+    hub.now = () => 5000;
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'one' });
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'two' });
+    assert.deepEqual(chats(fox).map((m) => m.text), ['one']);
+    assert.match(owl.last('chatError').error, /Slow down/);
+  });
+
+  test('a joining phone gets the all-players history', () => {
+    say(hub, owl, { t: 'chat', channel: 'all', text: 'hi' });
+    const late = fakeConn();
+    say(hub, late, { t: 'join', name: 'Ana', code: CODE, token: 'player-dddd', team: 1 });
+    assert.deepEqual(late.last('chatHistory').all.map((m) => m.text), ['hi']);
+  });
+
+  test('switching team swaps in the new team\'s history', () => {
+    say(hub, owl, { t: 'chat', channel: 'team', text: 'owls only' });
+    say(hub, fox, { t: 'team', team: 0 });
+    assert.deepEqual(fox.last('chatHistory').team.map((m) => m.text), ['owls only']);
+  });
+
+  test('history keeps the last 50 messages per channel', () => {
+    for (let i = 0; i < 55; i++) say(hub, owl, { t: 'chat', channel: 'all', text: `m${i}` });
+    const late = fakeConn();
+    say(hub, late, { t: 'join', name: 'Ana', code: CODE, token: 'player-dddd' });
+    const all = late.last('chatHistory').all;
+    assert.equal(all.length, 50);
+    assert.equal(all[0].text, 'm5');
+  });
+});
+
 test('malformed messages are ignored', () => {
   assert.doesNotThrow(() => hub.message(host, 'not json'));
   assert.doesNotThrow(() => hub.message(host, 'null'));

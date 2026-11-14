@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue';
 import AppName from '../components/AppName.vue';
 import WriteQuestion, { hasDraft } from './WriteQuestion.vue';
+import ChatPanel from './ChatPanel.vue';
 
 // A player's phone: join the host's room, pick a team, then follow the host's
 // state and send answers. The host's TV shows the question and media; the
@@ -55,6 +56,10 @@ const categories = ref([]);
 const writing = ref(false);
 const sending = ref(false);
 const writeReply = ref(null);
+// Chat messages per channel and the newest id read in each (history counts as read).
+const chat = reactive({ all: [], team: [], seen: { all: 0, team: 0 }, error: '' });
+const CHAT_KEEP = 50;
+const lastId = (msgs) => msgs.at(-1)?.id ?? 0;
 
 let ws = null;
 let wanted = false;
@@ -82,6 +87,16 @@ function connect() {
     } else if (msg.t === 'rejected') {
       sending.value = false;
       writeReply.value = { ok: false, error: msg.error, problems: msg.problems };
+    } else if (msg.t === 'chatHistory') {
+      chat.all = msg.all;
+      chat.team = msg.team;
+      chat.seen = { all: lastId(msg.all), team: lastId(msg.team) };
+    } else if (msg.t === 'chat') {
+      const list = msg.message.channel === 'team' ? chat.team : chat.all;
+      list.push(msg.message);
+      if (list.length > CHAT_KEEP) list.shift();
+    } else if (msg.t === 'chatError') {
+      chat.error = msg.error;
     } else if (msg.t === 'error') {
       // A bad code won't fix itself by retrying; go back to the code screen.
       error.value = msg.error;
@@ -149,6 +164,14 @@ watch(() => question.value?.n, () => {
   sent.value = null;
   typed.value = '';
 });
+
+function sendChat(channel, text) {
+  chat.error = '';
+  send({ t: 'chat', channel, text });
+}
+function markSeen(channel, id) {
+  chat.seen[channel] = id;
+}
 
 function answerChoice(i, label) {
   if (mine.value || sent.value) return;
@@ -306,6 +329,17 @@ onUnmounted(() => {
       <p v-if="myStanding && phase !== 'final'" class="hint-text">You're in place {{ myStanding.place }}.</p>
       <button type="button" class="btn-link" @click="openWriter">✍️ Write a question</button>
     </section>
+
+    <ChatPanel
+      v-if="status === 'joined' && state"
+      :all="chat.all"
+      :team="chat.team"
+      :seen="chat.seen"
+      :team-name="myTeam?.name ?? ''"
+      :error="chat.error"
+      @send="sendChat"
+      @seen="markSeen"
+    />
   </main>
 </template>
 
