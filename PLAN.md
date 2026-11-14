@@ -260,6 +260,20 @@ More questions without typing them: a standalone tool that pulls from open sourc
 
 ---
 
+## Phase 15: Phone chat (built)
+
+Players talk on their phones during a game: within their team, or with the whole room. See SCOPE §4 Feature 32.
+
+- **Relay** (`server/game.js`): a `{ t: 'chat', channel: 'team' | 'all', text }` message. The hub takes name and team from the phone's record, drops `team` messages from a phone without a team, trims to 200 characters and refuses a second message from the same token within 500 ms (`chatError`). It sends `chat` to every phone (`all`) or the sender's teammates (`team`), with `mine` per recipient instead of the token, and never to the host. The last 50 messages per channel stay in memory and go out as `chatHistory` on `join` and `team`.
+- **Phone** (`client/src/phone/ChatPanel.vue`): collapsed panel under the main card with an unread count, Team / Everyone tabs, the message list and a send box. History counts as read.
+
+**Out of this phase:** chat on the TV or host computer (team talk would leak), moderation or muting, and saving chat to disk.
+
+**Tests:** `test/game.test.js` `chat` suite.
+**Verify:** `npm run party`, join three phones (two on one team), send a team message and an Everyone message, and check who sees each; reload a phone and see the history; the TV shows no chat.
+
+---
+
 ## Suggested commit checkpoints
 
 One commit per phase (`feat: phase N — <name>`), so the history reads as real incremental progress, not a one-shot dump.

@@ -49,7 +49,7 @@ test imports `apps/builder/client/src/store.js`, which needs the client's packag
 from the root `npm install`.
 
 `apps/builder/test/game.test.js` covers the phone-play relay (room code, who may host, what each
-phone sees, which team an answer counts for) with fake connections, and
+phone sees, which team an answer counts for, who receives each chat message) with fake connections, and
 `apps/builder/test/store-phones.test.js` covers locking in, grading and
 pre-awarded points in the store.
 
@@ -370,6 +370,25 @@ reload). A question goes straight into the bank, tagged public and unread (see
 - **When it's played:** the Answer Reveal shows *✍️ Written by <nickname>*. The
   author's phone shows "You wrote this one!" instead of the answer buttons, and the
   relay drops any answer from it; teammates can still answer.
+
+### Phone chat
+
+Under the main card, every joined phone has a **💬 Chat** panel (collapsed, with an
+*N new* count). It stays below the answer buttons, so a team can talk while a
+question is live.
+
+- **Channels:** the player's own team (only its phones see it) and **Everyone**
+  (every phone in the room, marked "Every team can read this"). A phone without a
+  team only has Everyone.
+- **What the relay enforces:** the sender's name and team come from the phone's
+  join record, not the message; messages are trimmed and capped at 200 characters;
+  one player can send at most one message per 500 ms ("Slow down a little.").
+- **Not on the TV:** the host gets no chat, so team talk can't leak onto the big
+  screen.
+- **History:** the relay keeps the last 50 messages per channel in memory and sends
+  them to a phone when it joins, reloads or switches team. They count as read and
+  are gone when the server restarts. Nothing is written to disk.
+
 The room code lasts until the server restarts, so reloading the host page keeps
 everyone in.
 
