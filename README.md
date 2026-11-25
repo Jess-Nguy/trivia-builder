@@ -6,6 +6,7 @@ questions in the **Question Builder**, group them into playlists (or drop CSVs i
 scoring. No database: CSV files in `/import` plus two JSON files in `data/`.
 
 See [SCOPE.md](SCOPE.md) for the full feature scope and [PLAN.md](PLAN.md) for the build plan.
+Plans for the hosted version (database, accounts, online rooms) are in [docs/plans/](docs/plans/00-roadmap.md).
 
 The repo is a monorepo of trivia tools, each an npm workspace, all run from the root:
 

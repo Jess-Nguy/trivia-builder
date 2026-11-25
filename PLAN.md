@@ -274,6 +274,19 @@ Players talk on their phones during a game: within their team, or with the whole
 
 ---
 
+## Phases 16-21: hosted Trivia Builder (planned, not built)
+
+Taking the app online at `trivia.je-ng.ca` for friends and family. Each phase has its own plan in `docs/plans/`; [00-roadmap.md](docs/plans/00-roadmap.md) gives the build order (16, 18, 17, 19, 20, 21) and how they connect.
+
+- **Phase 16: Database.** Supabase Postgres behind an async storage interface, JSON kept for offline. [01-database.md](docs/plans/01-database.md)
+- **Phase 17: Security and hosting.** Threat model, Fly.io behind Cloudflare, pre-deploy checklist. [02-security-and-hosting.md](docs/plans/02-security-and-hosting.md)
+- **Phase 18: Site password and accounts.** Gate for everyone, QR room tickets, Supabase Auth. [03-site-password-and-accounts.md](docs/plans/03-site-password-and-accounts.md)
+- **Phase 19: Private and public questions.** Publish, reference, copy, "no longer available". Supersedes Phase 13 steps 2-3. [04-question-visibility.md](docs/plans/04-question-visibility.md)
+- **Phase 20: Stats dashboard.** Play events, owner dashboard, public popularity board. [05-stats-dashboard.md](docs/plans/05-stats-dashboard.md)
+- **Phase 21: Online rooms.** Many rooms at once, remote play with server-timed questions. [06-online-rooms.md](docs/plans/06-online-rooms.md)
+
+---
+
 ## Suggested commit checkpoints
 
 One commit per phase (`feat: phase N — <name>`), so the history reads as real incremental progress, not a one-shot dump.
