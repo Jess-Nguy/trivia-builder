@@ -15,6 +15,17 @@ Done when: two accounts can share a question by publishing it, the second accoun
 - **Playlists have the same toggle.** A public playlist may only hold public questions. Publishing a playlist that holds the owner's private questions asks "Publish these N questions too?"; it can't hold other accounts' private questions because those can never be added in the first place.
 - **Unpublished or deleted questions drop out of other people's playlists, shown as "no longer available".** They're skipped when a game starts. Rejected: blocking unpublish once used (owners lose control of their own questions), and auto-copying to every referencing account (silently creates copies the owner meant to withdraw).
 - **"No longer available" rows carry no content.** The owner made it private; showing its text in someone else's playlist would undo that. The row shows only "A question that is no longer available" and a **Remove** button.
+- **Exact duplicates.** "Exact" means the same `questionKey`: question, answer and attachment, trimmed and case-insensitive. So "What flag is this?" with two different flag pictures is two questions. The fuzzy `findDuplicate` check stays for phone submissions only.
+
+  | Case | What happens | Why |
+  | --- | --- | --- |
+  | Saving one that matches a question in my own bank (Builder) | Blocked: "Already in your bank", with **Open it** ([01](01-database.md) step 1) | Two copies split stats and can both come up in one game |
+  | Copying a public question I already have an exact match of (an unedited earlier copy, or my own) | No new copy; opens the one I have | A second identical copy has no use |
+  | Publishing one that matches another account's public question | Blocked: "Sam already made this public. Add theirs to your playlists instead." | The public library would list it twice and split its popularity. Also catches copying a public question and republishing it unchanged |
+  | Two accounts each have it private | Allowed | Nobody else sees either; checking would reveal that a private question exists |
+  | CSV import or harvester `--to-db` | Reuses exact matches in my own bank only, never others' public ones | Imports build my bank; a reference could later turn "no longer available" |
+  | Phone question matching a public question | Rejected by the existing fuzzy check, which runs against the host's bank plus public questions (step 4) | Consistent with today's phone rule |
+
 - **Admin can unpublish anything** (`profiles.is_admin` from [03](03-site-password-and-accounts.md)), for the day someone publishes something unkind.
 
 ## Depends on / unlocks
@@ -29,6 +40,7 @@ Changes to [01](01-database.md)'s schema, as a new migration:
 
 - `questions.deleted_at timestamptz null`. Deleting a question that another account's playlist references sets this (a tombstone) instead of removing the row, so those playlists can show "no longer available". With no outside references it's deleted for real.
 - `questions.published_at timestamptz null`, set on each publish; the public library sorts by it.
+- Replace [01](01-database.md)'s `unique (owner_id, question_key)` with the same index `where deleted_at is null`, so a tombstone doesn't stop the owner writing that question again. Add an index on `(question_key) where visibility = 'public' and deleted_at is null` for the publish check.
 - `playlists.published_at` the same.
 - A question is **available to account A** when `deleted_at is null and (owner_id = A or visibility = 'public')`. This one rule lives in a single SQL fragment / helper in `apps/builder/server/storage/supabase.js` and its JSON twin, and every read uses it.
 
@@ -41,7 +53,8 @@ JSON mode has one owner (`'local'`), so visibility is stored but has no effect t
 - `setQuestionVisibility(ownerId, id, visibility)` and `setPlaylistVisibility(ownerId, id, visibility, { publishQuestions })` in `apps/builder/server/library.js`. Publishing a playlist with private questions and `publishQuestions` false returns 409 with the count, which the client turns into the confirm prompt.
 - `addToPlaylist` and `updatePlaylist` refuse question ids that aren't available to the caller (404, not 403, so ids of other accounts' private questions can't be probed).
 - `deleteQuestion`: removes the question from the owner's own playlists as today (`syncMembership`), then tombstones or deletes as above.
-- `copyQuestion(ownerId, id)`: new row with `owner_id = ownerId`, `copied_from = id`, `visibility = 'private'`, `source = 'host'`, and `submitted_by`, `author_token`, `seen_at` cleared.
+- `copyQuestion(ownerId, id)`: new row with `owner_id = ownerId`, `copied_from = id`, `visibility = 'private'`, `source = 'host'`, and `submitted_by`, `author_token`, `seen_at` cleared. If the caller already has a question with the same `question_key`, return that one with `existing: true` instead of inserting.
+- Publishing a question (and each question published along with a playlist) is refused with 409 when another account has a public, not deleted question with the same `question_key`. The response carries that question's `publicView` (with `ownerName`) so the client can offer **Add theirs to a playlist**. `updateQuestion` on an already public question runs the same check, so an edit can't turn it into a public duplicate. For a playlist, the 409 lists every blocked question and nothing is published.
 - `getPlaylistGame` (used by Game Mode) returns only available questions, plus `unavailable: N` so Game Mode can say "2 questions in this playlist are no longer available".
 - API routes in `apps/builder/server/apiHandler.js`: `POST /api/library/questions/:id/publish`, `.../unpublish`, `.../copy`; `POST /api/library/playlists/:id/publish`, `.../unpublish`; `GET /api/library/public?q=&category=&type=&page=` (50 per page).
 - Admin: `unpublish` succeeds on any owner's row when `req.account.isAdmin`.
@@ -57,6 +70,7 @@ JSON mode has one owner (`'local'`), so visibility is stored but has no effect t
 - Editor: a **Private / Public** toggle on my own questions. Someone else's public question opens read-only with **Copy to my bank** and **Add to playlist…**.
 - Playlists column: the same toggle per playlist; a 🌐 marker on public ones; others' public playlists under a **Public playlists** heading, playable and copyable (copying a playlist creates a new private playlist that references the same public questions).
 - Unavailable rows render greyed with **Remove**.
+- Duplicate messages: "Already in your bank" with **Open it**; **Copy to my bank** on a question I already have says "You already have this one" and opens it; a refused publish shows "Sam already made this public" (with the other owner's display name) with **Add theirs to a playlist…**.
 - Game Mode dropdown (`GameMode.vue`): my playlists, then **Public playlists**.
 
 ### Step 4: phone-written questions go to the host
@@ -74,7 +88,7 @@ JSON mode has one owner (`'local'`), so visibility is stored but has no effect t
 
 ## Tests
 
-- `apps/builder/test/storage-contract.js`: publish/unpublish, availability rule, refused add of another's private id (404), copy fields, tombstone versus hard delete, playlist publish with and without `publishQuestions`.
+- `apps/builder/test/storage-contract.js`: publish/unpublish, availability rule, refused add of another's private id (404), copy fields, tombstone versus hard delete, playlist publish with and without `publishQuestions`; duplicates: second copy returns the first, publish refused against another account's public match, an edit making a public question a duplicate refused, two private matches across accounts allowed, a tombstoned question doesn't block re-creating it.
 - `apps/builder/test/library.test.js`: `publicView` key set; `findDuplicate` ignores another owner's private questions.
 - `apps/builder/test/game.test.js`: a phone submission lands with the room owner's id and `visibility: 'private'`.
 - Run: `npm test` (Supabase cases need `SUPABASE_DB_URL`, see [01](01-database.md)).
@@ -88,6 +102,8 @@ JSON mode has one owner (`'local'`), so visibility is stored but has no effect t
 5. A tries to publish a playlist containing private questions: prompt, then both are public.
 6. A hosts a room; a guest writes a question from a phone; it appears in A's Unread, private, and not in B's public library.
 7. Admin unpublishes B's public question.
+8. B copies A's public question twice: the second time opens the first copy. B publishes that copy unedited: refused with "A already made this public". B changes the answer and publishes: allowed.
+9. A writes, in the Builder, a question identical to one already in A's bank apart from letter case: "Already in your bank".
 
 ## Docs to update
 

@@ -28,7 +28,7 @@ All tables get `created_at timestamptz default now()`; editable ones also get `u
 | Table | Columns (beyond timestamps) | Notes |
 | --- | --- | --- |
 | `profiles` | `id uuid` (= `auth.users.id`), `display_name text`, `is_admin bool default false` | Created in step 1 with no rows; [03](03-site-password-and-accounts.md) fills it on sign-up. |
-| `questions` | `id`, `owner_id uuid → profiles`, `legacy_id text unique`, `question`, `options jsonb` (array of `{text, attachment}`), `current_answer`, `categories text[]`, `type`, `attachment`, `points int`, `hint`, `explanation`, `delay_secs int`, `visibility text check in ('private','public') default 'private'`, `copied_from uuid null`, `source text check in ('host','phone') default 'host'`, `submitted_by text`, `author_token text`, `seen_at timestamptz` | Same fields `normalizeQuestion` in `apps/builder/server/library.js` produces, snake-cased. `source` is renamed from today's `'public'` value; see *Watch out*. |
+| `questions` | `id`, `owner_id uuid → profiles`, `legacy_id text unique`, `question`, `options jsonb` (array of `{text, attachment}`), `current_answer`, `categories text[]`, `type`, `attachment`, `points int`, `hint`, `explanation`, `delay_secs int`, `visibility text check in ('private','public') default 'private'`, `copied_from uuid null`, `source text check in ('host','phone') default 'host'`, `submitted_by text`, `author_token text`, `seen_at timestamptz`, `question_key text not null` | Same fields `normalizeQuestion` in `apps/builder/server/library.js` produces, snake-cased. `source` is renamed from today's `'public'` value; see *Watch out*. `question_key` is `questionKey()` from `library.js`, set by the server on every write; `unique (owner_id, question_key)` makes the exact-duplicate rule hold even when two saves race. |
 | `playlists` | `id`, `owner_id`, `legacy_id`, `name`, `ordered bool`, `visibility` | `unique (owner_id, lower(name))`, matching `playlistName()`'s clash rule. |
 | `playlist_items` | `playlist_id`, `question_id`, `position int` | PK `(playlist_id, question_id)`. Order lives in `position`, not an array, so a reorder is one transaction. |
 | `played_history` | `owner_id`, `source_key text` (`playlist:<id>` or a CSV name), `question_key text` | Replaces the `trivia-played-questions` localStorage key in hosted mode. `question_key` is `questionKey()` from `apps/builder/client/src/store.js`. |
@@ -46,6 +46,7 @@ Each step is its own branch and PR.
 - `apps/builder/server/storage/index.js` exports `getStorage()`, choosing the adapter from `TRIVIA_STORAGE`.
 - Every exported library function becomes `async` and takes an `ownerId` first argument (`'local'` for now): `getLibrary`, `createQuestion`, `updateQuestion`, `deleteQuestion`, `markSeen`, `submitQuestion`, `createPlaylist`, `updatePlaylist`, `addToPlaylist`, `deletePlaylist`, `getPlaylistGame`, `importCsv`, `playlistCsv`.
 - Update callers: every branch of `apiMiddleware` in `apps/builder/server/apiHandler.js` awaits; `GameHub.submit` in `apps/builder/server/game.js` awaits `this.library.submitQuestion` and the `bank` object's `categories()` becomes async. The fake bank in `apps/builder/test/game.test.js` returns promises.
+- **Exact duplicates in the Builder.** `createQuestion` and `updateQuestion` refuse a question whose `questionKey` (question, answer and attachment, trimmed and case-insensitive; already in `library.js`) matches another question in the same owner's bank. They throw `LibraryError(409)` with `duplicateId`, and `QuestionEditor.vue` shows "Already in your bank" with an **Open it** button. Only exact matches: the fuzzy `findDuplicate` stays for phone submissions, because near-matches written in the Builder are often deliberate (the same prompt with a different picture). Today the Builder has no check; CSV import already reuses exact matches. See [04](04-question-visibility.md) *Duplicates* for the cross-account cases.
 - This is the riskiest step: a missed `await` returns a Promise that `JSON.stringify` turns into `{}`, so the API answers 200 with an empty body. Grep every call site; the tests in step 1 must hit each endpoint.
 - Rename the phone-written marker from `source: 'public'` to `source: 'phone'`. Today it appears in `submitQuestion` and `markSeen` (`apps/builder/server/library.js`), `isPublic` in `apps/builder/client/src/screens/Builder.vue`, the "Written by" line in `apps/builder/client/src/screens/AnswerReveal.vue`, the author check in `apps/builder/client/src/multiplayer.js`, and a fixture in `apps/builder/test/library.test.js`. Rename `isPublic` to `isPhone` and the Builder's "Public" filter label to "Phone" while there. `json.js` maps old `'public'` values to `'phone'` on read, so `data/questions.json` needs no hand edit.
 
@@ -60,13 +61,13 @@ Each step is its own branch and PR.
 
 - `tools/migrate-json/` as a new workspace (`npm run migrate-json -- --owner <profile-uuid>`). Reads `data/questions.json` and `data/playlists.json`, upserts on `legacy_id`, so running it twice changes nothing.
 - Until [03](03-site-password-and-accounts.md) exists there is no real account; the script accepts `--owner` and step 3 of [03](03-site-password-and-accounts.md) reruns it with Jess's real profile id.
-- Prints counts: `321 questions, 4 playlists, N playlist items`. Fails loudly if any row fails `normalizeQuestion`.
+- Prints counts: `321 questions, 4 playlists, N playlist items`. Fails loudly if any row fails `normalizeQuestion` or collides on `(owner_id, question_key)`. The bank had 0 exact duplicates on 2026-11-24, so a collision means something changed since.
 
 ### Step 4: CSV in hosted mode, harvester `--to-db`
 
 - Builder: an **Upload CSV** button posting the file body to a new `POST /api/library/import-upload` (text body, capped by the existing 1 MB `MAX_BODY`). Parsing reuses `parseCsv`, which today takes a file path; split it into `parseCsvText(text)` plus the existing path wrapper in `apps/builder/server/csv.js`.
 - In hosted mode `/api/files` and `/api/files/:name` return 404, and the Game Mode dropdown shows playlists only. JSON mode is unchanged.
-- `tools/harvester/src/cli.js` gets `--to-db --owner <uuid>`: same pipeline, but `write.js` inserts through the storage interface into a new playlist named like the CSV it would have written. Duplicate checks (`findDuplicate`) then run against that owner's bank instead of `import/`.
+- `tools/harvester/src/cli.js` gets `--to-db --owner <uuid>`: same pipeline, but `write.js` inserts through the storage interface into a new playlist named like the CSV it would have written. Duplicate checks (`findDuplicate`) then run against that owner's bank instead of `import/`. Exact matches in the owner's bank are reused, as `importCsv` does; other accounts' public questions are never matched, so an import always builds the owner's own bank.
 
 ## Security
 
@@ -76,7 +77,7 @@ Each step is its own branch and PR.
 
 ## Tests
 
-- `apps/builder/test/storage-contract.js` (not a `*.test.js`, so it isn't run directly): one suite of behaviours every adapter must pass, exported as `runContract(makeStorage)`. Covers create/read/update/delete, playlist order, membership sync, duplicate import, and owner isolation (owner A cannot read, update or delete owner B's rows).
+- `apps/builder/test/storage-contract.js` (not a `*.test.js`, so it isn't run directly): one suite of behaviours every adapter must pass, exported as `runContract(makeStorage)`. Covers create/read/update/delete, playlist order, membership sync, duplicate import, exact duplicates refused on create and on an edit that makes two questions match (but allowed across two owners), and owner isolation (owner A cannot read, update or delete owner B's rows).
 - `apps/builder/test/storage-json.test.js`: runs the contract on the JSON adapter in a temp `TRIVIA_DATA_DIR`.
 - `apps/builder/test/storage-supabase.test.js`: runs the contract against `SUPABASE_DB_URL`. When the variable is unset it skips with the message `Set SUPABASE_DB_URL (run "npx supabase start", then use the DB URL it prints) to run the Supabase storage tests.`
 - Existing `library.test.js`, `game.test.js` and `store-phones.test.js` keep passing after step 1, with `await` added.

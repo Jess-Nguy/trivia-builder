@@ -82,6 +82,7 @@ flowchart LR
 | Public questions | Playable and addable to playlists by reference (read-only); can also be copied as an independent question |
 | Public playlists | Yes; may hold only public questions |
 | Unpublish or delete | Drops out of others' playlists as "no longer available"; copies unaffected |
+| Exact duplicates | Blocked in my own bank and among public questions; allowed between two accounts' private banks; see 04 *Duplicates* |
 | Stats visibility | Owner sees own; everyone sees a public-only popularity board |
 | Online rooms | Many rooms at once, and a remote mode with full questions and media on each screen |
 | Finding rooms | Code, link or QR only |

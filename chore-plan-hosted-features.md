@@ -39,6 +39,8 @@ These were my calls, not ones we discussed. Each is listed in the roadmap:
 - Exactly one app machine, since rooms live in memory.
 - `source: 'public'` (phone-written) renamed to `source: 'phone'` so it can't be confused with the new public visibility.
 
+Added after review: **exact duplicates** (same question, answer and attachment, trimmed and case-insensitive) are blocked in your own bank and among public questions, allowed between two accounts' private banks, and enforced by a `unique (owner_id, question_key)` index. The full case table is in `04-question-visibility.md` under *Decisions*. The current bank has 0 exact duplicates, so the migration won't trip on it.
+
 ## Manual testing
 
 1. Open `docs/plans/00-roadmap.md` on GitHub; the mermaid diagram renders and every link to `01`-`06` opens.
